@@ -1,0 +1,25 @@
+/node_modules
+/oh_modules
+/local.properties
+/.idea
+**/build
+/.hvigor
+.cxx
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+/.appanalyzer
+/.trae
+
+# 备份文件
+*.backup_*
+
+# 临时文件
+*.log
+*.tmp
+*.insight
+
+# 编译产物
+*.hap
+*.app
