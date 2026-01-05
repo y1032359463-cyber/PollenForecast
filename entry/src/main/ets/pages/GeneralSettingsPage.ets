@@ -1,11 +1,13 @@
 /**
  * 通用设置页面
  * 包含：震动反馈、外观模式（跟随系统/浅色/深色）
+ * 支持 API 17+ 兼容处理
  */
 
 import { router, promptAction } from '@kit.ArkUI'
 import { vibrator } from '@kit.SensorServiceKit'
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
+import { ApiVersionUtils } from '../utils/ApiVersionUtils'  // API 版本检测工具
 
 @Entry
 @Component
@@ -144,13 +146,31 @@ struct GeneralSettingsPage {
           .borderRadius(12)
           .padding({ left: 16, right: 16 })
 
-          // ===== 智感握姿 =====
+          // ===== 智感握姿（API 20+ 专属功能）=====
           Row() {
             Column() {
-              Text('智感握姿')
-                .fontSize(16)
-                .fontColor($r('app.color.text_primary'))
-              Text('自动识别左右手握持，调整定位按钮位置')
+              Row() {
+                Text('智感握姿')
+                  .fontSize(16)
+                  .fontColor(ApiVersionUtils.supportsGripDetection() 
+                    ? $r('app.color.text_primary') 
+                    : $r('app.color.text_secondary'))
+                
+                // API 17-19：显示"需升级"标签
+                if (!ApiVersionUtils.supportsGripDetection()) {
+                  Text('需升级')
+                    .fontSize(10)
+                    .fontColor(Color.White)
+                    .backgroundColor('#FF9800')
+                    .borderRadius(4)
+                    .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                    .margin({ left: 8 })
+                }
+              }
+              
+              Text(ApiVersionUtils.supportsGripDetection()
+                ? '自动识别左右手握持，调整定位按钮位置'
+                : '此功能需要 HarmonyOS 6.0+（API 20）')
                 .fontSize(12)
                 .fontColor($r('app.color.text_secondary'))
                 .margin({ top: 4 })
@@ -162,6 +182,8 @@ struct GeneralSettingsPage {
             Toggle({ type: ToggleType.Switch, isOn: this.gripDetectionEnabled })
               .selectedColor('#4CAF50')
               .switchPointColor(Color.White)
+              .enabled(ApiVersionUtils.supportsGripDetection())  // API 17 禁用
+              .opacity(ApiVersionUtils.supportsGripDetection() ? 1 : 0.5)
               .onChange((isOn: boolean) => {
                 this.gripDetectionEnabled = isOn
                 console.info(`智感握姿: ${isOn ? '开启' : '关闭'}`)
@@ -177,6 +199,15 @@ struct GeneralSettingsPage {
           .borderRadius(12)
           .padding({ left: 16, right: 16 })
           .margin({ top: 12 })
+          .onClick(() => {
+            // API 17-19：点击时显示升级提示
+            if (!ApiVersionUtils.supportsGripDetection()) {
+              this.getUIContext().getPromptAction().showToast({
+                message: '智感握姿需要 HarmonyOS 6.0+（API 20）',
+                duration: 2000
+              })
+            }
+          })
 
           // ===== 外观模式 =====
           Column() {

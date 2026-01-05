@@ -1,7 +1,7 @@
 /**
  * 地图页面 - Tab3
  * 使用华为 Map Kit 显示地图和花粉信息
- * API 20 Release 版本
+ * 支持 API 17+ 兼容处理
  */
 
 import { MapComponent, map, mapCommon } from '@kit.MapKit';
@@ -9,8 +9,9 @@ import { LocationService } from '../service/LocationService';
 import { promptAction, window } from '@kit.ArkUI';  // window 用于获取 vp 单位屏幕尺寸
 import { vibrator } from '@kit.SensorServiceKit';
 import { ConfigurationConstant, common } from '@kit.AbilityKit';
-import { motion } from '@kit.MultimodalAwarenessKit';  // 智感握姿监听
+import { motion } from '@kit.MultimodalAwarenessKit';  // 智感握姿监听（API 20+）
 import { display } from '@kit.ArkUI';  // 获取屏幕尺寸（用于像素密度）
+import { ApiVersionUtils } from '../utils/ApiVersionUtils';  // API 版本检测工具
 
 // 城市坐标数据（与 RegionView 保持一致）
 interface CityCoordinate {
@@ -184,6 +185,12 @@ export struct MapView {
   }
 
   private setupGripDetection() {
+    // API 版本检测：智感握姿仅 API 20+ 支持
+    if (!ApiVersionUtils.supportsGripDetection()) {
+      console.info('[MapView] API 版本不支持智感握姿，跳过')
+      return
+    }
+
     // 检查开关状态
     if (!this.gripDetectionEnabled) {
       console.info('[MapView] 智感握姿已关闭，不启动监听')
@@ -326,46 +333,62 @@ export struct MapView {
       this.mapReady = true
       console.info('[MapView] 地图初始化成功')
 
-      // 获取事件管理器（API 20新增）
-      try {
-        this.mapEventManager = controller.getEventManager()
-        
-        // 添加相机空闲监听（缩放级别变化时触发）
-        this.mapEventManager.on('cameraIdle', async () => {
-          await this.onCameraChanged()
-        })
-        
-        // 添加标记点击监听（全局只绑定一次）
-        this.mapEventManager.on('markerClick', (clickedMarker: map.Marker) => {
-          this.handleMarkerClick(clickedMarker)
-        })
-        
-        // 添加定位按钮点击监听（移动到当前位置）
-        this.mapEventManager.on('myLocationClick', async () => {
-          console.info('[MapView] 定位按钮被点击')
+      // API 版本检测
+      const apiVersion = ApiVersionUtils.getApiVersion()
+      console.info(`[MapView] 当前 API 版本: ${apiVersion}，${ApiVersionUtils.getVersionDescription()}`)
+
+      // ========== 事件监听兼容处理 ==========
+      if (ApiVersionUtils.supportsMapEventManager()) {
+        // API 20+: 使用 MapEventManager
+        try {
+          this.mapEventManager = controller.getEventManager()
           
-          // 震动反馈
-          if (this.vibrationEnabled) {
-            try {
-              vibrator.startVibration({
-                type: 'time',
-                duration: 30
-              }, {
-                id: 0,
-                usage: 'touch'
-              })
-            } catch (e) {
-              console.warn('[MapView] 震动反馈失败')
-            }
+          // 添加相机空闲监听（缩放级别变化时触发）
+          this.mapEventManager.on('cameraIdle', async () => {
+            await this.onCameraChanged()
+          })
+          
+          // 添加标记点击监听（全局只绑定一次）
+          this.mapEventManager.on('markerClick', (clickedMarker: map.Marker) => {
+            this.handleMarkerClick(clickedMarker)
+          })
+          
+          // 添加定位按钮点击监听（使用自定义按钮，此事件不再使用）
+          this.mapEventManager.on('myLocationClick', async () => {
+            console.info('[MapView] 系统定位按钮被点击（已禁用，使用自定义按钮）')
+          })
+          
+          console.info('[MapView] ✅ MapEventManager 初始化成功（API 20+）')
+        } catch (e) {
+          console.warn('[MapView] MapEventManager 初始化失败:', JSON.stringify(e))
+        }
+      } else {
+        // API 17-19: 尝试 CodeGenie 方案（controller.on()）
+        console.info('[MapView] API 17-19，尝试 controller.on() 事件监听')
+        try {
+          // 尝试直接在 controller 上监听事件（CodeGenie 方案）
+          const anyController = controller as ESObject
+          
+          // 标记点击事件
+          if (typeof anyController.on === 'function') {
+            anyController.on('markerClick', (clickedMarker: map.Marker) => {
+              this.handleMarkerClick(clickedMarker)
+            })
+            
+            // 相机移动结束事件
+            anyController.on('cameraMoveEnd', async () => {
+              await this.onCameraChanged()
+            })
+            
+            console.info('[MapView] ✅ controller.on() 事件监听成功（CodeGenie 方案）')
+          } else {
+            console.warn('[MapView] ⚠️ controller.on() 不可用，将使用组件级事件')
+            // 组件级事件将在 MapComponent 的 onMarkerClick 中处理
           }
-          
-          // 移动到当前位置
-          await this.moveCameraToLocation(this.latitude, this.longitude, 13)
-        })
-        
-        console.info('[MapView] 事件管理器初始化成功')
-      } catch (e) {
-        console.warn('[MapView] 事件管理器初始化失败:', JSON.stringify(e))
+        } catch (e) {
+          console.error('[MapView] ❌ API 17 事件监听失败:', JSON.stringify(e))
+          console.warn('[MapView] 将使用组件级事件作为备选方案')
+        }
       }
 
       // ========== 禁用系统定位控件（使用自定义按钮）==========
