@@ -201,6 +201,11 @@ HarmonyOS SDK: 6.0.0 (API 20)
   - 全页面统一背景色方案（首页/区域/地图/设置）
 
 #### 当前进行中 🔄
+- [x] **API 17 兼容性改造** (2026-01-05) ✨ 最新
+  - ✅ 创建 `ApiVersionUtils.ets` API 版本检测工具类
+  - ✅ 修改 `MapView.ets` 添加事件监听兼容处理
+  - ✅ 修改 `GeneralSettingsPage.ets` 智感握姿 API 兼容 UI
+  - ⏳ 待 API 17 设备验证事件监听和坐标转换
 - [ ] **导航栏毛玻璃效果修复** - Column布局下backdropBlur失效
   - 问题已整理到 `C:\HarmonyOS_App_Plans\.claude\当前问题.md`
   - 等待 CodeGenie 回复解决方案
@@ -259,13 +264,14 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 | 备份时间 | 版本 | 路径 | 大小 | 说明 |
 |---------|------|------|------|------|
+| 2026-01-05 17:30 | v1.0.1 | Git 提交 `d977351` | - | API 17 兼容性实施（ApiVersionUtils + 事件监听兼容） |
 | 2026-01-05 16:21 | v1.0.1 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.1_20260105_162141` | 15.85 MB | API 17兼容性咨询文档 + MapKit功能清单 |
 | 2025-12-12 23:34 | v1.0.1 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.1_20251212_233433` | 1.73 MB | 交互优化 + 服务器架构完成后的精简可运行版本 |
 
 **备份内容**: AppScope、entry/src、配置文件、文档（排除 build/、oh_modules/、figma/、server/）
 
 **GitHub仓库**: `https://github.com/y1032359463-cyber/PollenForecast.git`  
-**最新提交**: `0c39e6b` - docs: Add API 17 compatibility consultation docs and MapKit feature list
+**最新提交**: `d977351` - feat: Add API 17 compatibility - version detection and event listener fallback
 
 ---
 
@@ -305,7 +311,51 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 ## 📝 开发日志
 
-### 2025-12-29 (状态栏字体颜色修复 + UI 清晰度优化) ✨ 最新
+### 2026-01-05 (API 17 兼容性改造) ✨ 最新
+
+**功能实现**: 支持 API 17 (HarmonyOS 5.0) 设备运行
+
+**背景**:
+- 客户反馈 API 版本过高导致无法安装
+- 需要降级到 API 17 以适配更多原生鸿蒙设备
+
+**实施内容**:
+1. ✅ **创建 API 版本检测工具类**
+   - 文件: `entry/src/main/ets/utils/ApiVersionUtils.ets`
+   - 功能: `getApiVersion()`, `isAPI20()`, `supportsGripDetection()`, `supportsMapEventManager()`
+
+2. ✅ **MapView.ets 事件监听兼容**
+   - API 20+: 使用 `MapEventManager`
+   - API 17-19: 尝试 `controller.on()` 事件监听（CodeGenie 方案）
+   - 智感握姿: API 版本不支持时跳过初始化
+
+3. ✅ **GeneralSettingsPage.ets UI 降级**
+   - 智感握姿开关: API 17 设备显示灰色不可用
+   - 添加"需升级"标签
+   - 点击时显示升级提示 Toast
+
+**技术要点**:
+- ✅ `deviceInfo.sdkApiVersion` 获取 API 版本（已验证）
+- ✅ 静态导入 + 条件判断包裹使用（无需动态 import）
+- ✅ API 17 会自动忽略未识别权限（如 DETECT_GESTURE）
+- ✅ Toggle 禁用状态下不触发 onChange，需用事件委托
+
+**待验证**:
+- ⏳ API 17 设备上 `controller.on()` 是否可用
+- ⏳ `animateCamera()` 是否需要坐标转换
+- ⏳ `snippet` 属性是否有效
+
+**修改的文件**:
+- `entry/src/main/ets/utils/ApiVersionUtils.ets` - **新增**
+- `entry/src/main/ets/views/MapView.ets` - 事件监听兼容
+- `entry/src/main/ets/pages/GeneralSettingsPage.ets` - 智感握姿 UI 降级
+- `.claude/API17兼容性实施建议.md` - **新增** 实施建议文档
+
+**Git 提交**: `d977351` - feat: Add API 17 compatibility - version detection and event listener fallback
+
+---
+
+### 2025-12-29 (状态栏字体颜色修复 + UI 清晰度优化)
 
 **问题背景**:
 1. 浅色模式下状态栏字体显示灰色，不够清晰（之前是纯黑）
