@@ -41,6 +41,9 @@ export default class EntryAbility extends UIAbility {
     AppStorage.setOrCreate('dailyReportEnabled', true);
     AppStorage.setOrCreate('dailyReportTime', '08:00');
 
+    // 初始化数据源选择（默认自动选择）
+    AppStorage.setOrCreate('pollenDataSource', 'AUTO');
+
     // 设置 LocationService 的 context
     LocationService.getInstance().setContext(this.context);
 

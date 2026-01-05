@@ -363,32 +363,10 @@ export struct MapView {
           console.warn('[MapView] MapEventManager 初始化失败:', JSON.stringify(e))
         }
       } else {
-        // API 17-19: 尝试 CodeGenie 方案（controller.on()）
-        console.info('[MapView] API 17-19，尝试 controller.on() 事件监听')
-        try {
-          // 尝试直接在 controller 上监听事件（CodeGenie 方案）
-          const anyController = controller as ESObject
-          
-          // 标记点击事件
-          if (typeof anyController.on === 'function') {
-            anyController.on('markerClick', (clickedMarker: map.Marker) => {
-              this.handleMarkerClick(clickedMarker)
-            })
-            
-            // 相机移动结束事件
-            anyController.on('cameraMoveEnd', async () => {
-              await this.onCameraChanged()
-            })
-            
-            console.info('[MapView] ✅ controller.on() 事件监听成功（CodeGenie 方案）')
-          } else {
-            console.warn('[MapView] ⚠️ controller.on() 不可用，将使用组件级事件')
-            // 组件级事件将在 MapComponent 的 onMarkerClick 中处理
-          }
-        } catch (e) {
-          console.error('[MapView] ❌ API 17 事件监听失败:', JSON.stringify(e))
-          console.warn('[MapView] 将使用组件级事件作为备选方案')
-        }
+        // API 17-19: 事件监听待真机验证
+        // TODO: API 17 真机验证后实现 controller.on() 事件监听
+        console.warn('[MapView] API 17-19 设备，事件监听功能受限（待真机验证）')
+        console.warn('[MapView] 地图标记点击和相机移动事件可能不可用')
       }
 
       // ========== 禁用系统定位控件（使用自定义按钮）==========

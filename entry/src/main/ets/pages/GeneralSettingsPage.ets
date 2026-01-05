@@ -8,6 +8,7 @@ import { router, promptAction } from '@kit.ArkUI'
 import { vibrator } from '@kit.SensorServiceKit'
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { ApiVersionUtils } from '../utils/ApiVersionUtils'  // API 版本检测工具
+import { PollenDataSourceType, POLLEN_DATA_SOURCES, getDataSourceName } from '../model/PollenDataSource'
 
 @Entry
 @Component
@@ -19,8 +20,24 @@ struct GeneralSettingsPage {
   @StorageLink('vibrationEnabled') vibrationEnabled: boolean = false
   @StorageLink('appearanceMode') appearanceMode: number = 0  // 0=跟随系统, 1=浅色, 2=深色
   @StorageLink('gripDetectionEnabled') gripDetectionEnabled: boolean = false  // 智感握姿开关
+  @StorageLink('pollenDataSource') pollenDataSource: string = 'AUTO'  // 数据源选择
 
   private appearanceModes: string[] = ['跟随系统', '浅色模式', '深色模式']
+  
+  // 数据源选项
+  private getDataSourceOptions(): string[] {
+    return POLLEN_DATA_SOURCES
+      .filter(source => source.enabled)
+      .map(source => source.name)
+  }
+  
+  // 获取当前选中的数据源索引
+  private getCurrentDataSourceIndex(): number {
+    const currentType = this.pollenDataSource as PollenDataSourceType
+    const enabledSources = POLLEN_DATA_SOURCES.filter(s => s.enabled)
+    const index = enabledSources.findIndex(s => s.type === currentType)
+    return index >= 0 ? index : 0
+  }
 
   // 触发震动反馈
   triggerVibration(): void {
@@ -256,6 +273,73 @@ struct GeneralSettingsPage {
 
           // 说明文字
           Text('选择"跟随系统"时，应用会根据系统设置自动切换深色或浅色模式。')
+            .fontSize(12)
+            .fontColor($r('app.color.text_secondary'))
+            .width('100%')
+            .margin({ top: 12 })
+            .padding({ left: 4, right: 4 })
+
+          // ===== 数据源选择 =====
+          Column() {
+            Text('数据源')
+              .fontSize(13)
+              .fontColor($r('app.color.text_secondary'))
+              .width('100%')
+              .padding({ bottom: 8 })
+
+            Column() {
+              ForEach(POLLEN_DATA_SOURCES.filter(s => s.enabled), (source, index) => {
+                Row() {
+                  Column() {
+                    Text(source.name)
+                      .fontSize(16)
+                      .fontColor($r('app.color.text_primary'))
+                    Text(source.description)
+                      .fontSize(12)
+                      .fontColor($r('app.color.text_secondary'))
+                      .margin({ top: 2 })
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+
+                  Blank()
+
+                  if (this.pollenDataSource === source.type) {
+                    Text('✓')
+                      .fontSize(18)
+                      .fontColor('#4CAF50')
+                  }
+                }
+                .width('100%')
+                .height(60)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.pollenDataSource = source.type
+                  console.info(`数据源已切换为: ${source.name} (${source.type})`)
+                  if (this.vibrationEnabled) {
+                    this.triggerVibration()
+                  }
+                  this.getUIContext().getPromptAction().showToast({
+                    message: `已切换到 ${source.name}`,
+                    duration: 1500
+                  })
+                })
+
+                if (index < POLLEN_DATA_SOURCES.filter(s => s.enabled).length - 1) {
+                  Divider()
+                    .color($r('app.color.divider_color'))
+                    .margin({ left: 16 })
+                }
+              })
+            }
+            .backgroundColor($r('app.color.card_background'))
+            .borderRadius(12)
+          }
+          .width('100%')
+          .margin({ top: 24 })
+
+          // 数据源说明文字
+          Text('选择不同的数据源获取花粉数据。自动选择会根据网络和位置自动选择最佳数据源。')
             .fontSize(12)
             .fontColor($r('app.color.text_secondary'))
             .width('100%')

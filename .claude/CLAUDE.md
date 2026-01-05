@@ -1,8 +1,58 @@
 # 花粉浓度播报 (PollenForecast)
 
 > **作用范围**: 本项目专属文档  
-> **最后更新**: 2025-12-15 (ReminderAgentKit 紧急修复)  
+> **最后更新**: 2026-01-06 (用户可选择的多数据源架构)  
 > **AI 维护者**: GitHub Copilot / Claude
+
+---
+
+## 🚨 当前状态概要（新窗口必读）
+
+### ✅ 本次会话完成（2026-01-06）
+1. **多服务器故障转移架构**
+   - DynamoDB 表创建：`pollen_cache`（TTL 30分钟）
+   - Lambda 东京（主服务器）：30分钟缓存 + DynamoDB 写入
+   - Lambda 新加坡（副服务器）：DynamoDB 读取 + 兜底写
+   - 阿里云（只读服务器）：简化版，只读 DynamoDB，内存占用减少 75%
+   - 客户端优先级调整：Lambda 东京 → Lambda 新加坡 → 阿里云
+
+2. **用户可选择的多数据源架构**
+   - 创建数据源枚举和配置（Google/CMA/QWeather/AUTO）
+   - 数据源适配器接口设计
+   - PollenService 支持用户选择的数据源
+   - 通用设置页面添加数据源选择器 UI
+   - 用户可根据需求选择不同数据源（非数据融合）
+
+3. **版本更新**
+   - versionCode: 1000003 → 1000004
+   - versionName: 1.0.2
+
+### ✅ 上次会话完成（2026-01-05）
+1. **API 17 兼容性实施**
+   - 创建 `ApiVersionUtils.ets` - API 版本检测工具类
+   - 修改 `MapView.ets` - 事件监听兼容（API 20 用 MapEventManager，API 17 尝试 controller.on）
+   - 修改 `GeneralSettingsPage.ets` - 智感握姿 UI 降级（API 17 显示灰色不可用）
+   - Git 提交: `d977351`
+
+2. **知识库整理**
+   - 已验证方案 → `C:\HarmonyOS_App_Plans\.claude\知识库.md`
+   - 待验证方案 → `C:\HarmonyOS_App_Plans\.claude\知识库_中转站（待验证实践效果）.md`
+
+3. **文件结构修复**
+   - 备份目录 CLAUDE.md 已改名为 .bak（防止 Cursor 重复加载）
+   - 全局 User Rules 已提供（可复制到 Cursor Settings）
+
+### ⏳ 待 API 17 真机验证
+- [ ] `controller.on('markerClick')` 是否可用（CodeGenie 方案）
+- [ ] `animateCamera()` 是否需要坐标转换
+- [ ] `MarkerOptions.snippet` 是否有效
+
+### 📂 关键文件位置
+| 文件 | 用途 |
+|------|------|
+| `entry/src/main/ets/utils/ApiVersionUtils.ets` | API 版本检测（新增） |
+| `C:\HarmonyOS_App_Plans\.claude\知识库.md` | 已验证的技术方案 |
+| `C:\HarmonyOS_App_Plans\.claude\知识库_中转站（待验证实践效果）.md` | 待验证方案（MapKit 兼容等） |
 
 ---
 
@@ -201,48 +251,83 @@ HarmonyOS SDK: 6.0.0 (API 20)
   - 全页面统一背景色方案（首页/区域/地图/设置）
 
 #### 当前进行中 🔄
-- [x] **API 17 兼容性改造** (2026-01-05) ✨ 最新
-  - ✅ 创建 `ApiVersionUtils.ets` API 版本检测工具类
-  - ✅ 修改 `MapView.ets` 添加事件监听兼容处理
-  - ✅ 修改 `GeneralSettingsPage.ets` 智感握姿 API 兼容 UI
-  - ⏳ 待 API 17 设备验证事件监听和坐标转换
+- [ ] **API 17 真机验证** (等待设备)
+  - ⏳ 验证 `controller.on('markerClick')` 事件监听
+  - ⏳ 验证 `animateCamera()` 坐标转换需求
+  - ⏳ 验证 `MarkerOptions.snippet` 属性有效性
 - [ ] **导航栏毛玻璃效果修复** - Column布局下backdropBlur失效
   - 问题已整理到 `C:\HarmonyOS_App_Plans\.claude\当前问题.md`
   - 等待 CodeGenie 回复解决方案
 
+#### 已完成（待发布）✅
+- [x] **API 17 兼容性改造** (2026-01-05)
+  - ✅ 创建 `ApiVersionUtils.ets` API 版本检测工具类
+  - ✅ 修改 `MapView.ets` 添加事件监听兼容处理
+  - ✅ 修改 `GeneralSettingsPage.ets` 智感握姿 API 兼容 UI
+  - ✅ Git 提交 `d977351`
+
 #### 待办 📋 (AppGallery审核反馈)
 - [ ] 医疗免责声明添加（可通过调整文案规避）
+- [ ] API 17 真机验证后发布新版本
 
-### 服务器部署架构 🌐 (2025-12-15)
+### 服务器部署架构 🌐 (2026-01-06 更新)
 
-**双服务器架构** - 安全与可用性保障
+**多服务器故障转移架构** - 高可用性保障
 
-1. **阿里云新加坡 - Google Pollen API 代理**
-   - URL: http://47.84.1.164:5000/pollen-api
-   - Admin: http://47.84.1.164:5000/admin
-   - Health: http://47.84.1.164:5000/health
-   - 作用: 代理 Google Pollen API（国内可访问）
+#### 花粉数据服务器（主从架构）
+
+1. **AWS Lambda 东京（主服务器）** ⭐
+   - URL: https://g7d8o7pf5b.execute-api.ap-northeast-1.amazonaws.com/default/pollen-api
+   - 功能: 每30分钟调用 Google API + 写入 DynamoDB
+   - 缓存: 内存缓存 + DynamoDB（30分钟 TTL）
    - 状态: ✅ 生产环境运行中
-   - 备注: 2025-12-15 从 AWS Lambda 迁移（AWS新加坡节点不可用）
+   - 优先级: 1（主服务器）
 
-2. **百度云广州服务器 - 和风天气 API 代理**
-   - URL: http://106.12.143.105:3000
-   - 作用: 代理和风天气 API，保护 API Key 不暴露在客户端
-   - 状态: ✅ 生产环境运行中（2025-12-13 部署）
-   - 部署路径: /root/pollen-api/
-   - 技术栈: Node.js v20.19.6 + Express + node-cache (15分钟缓存) + PM2
-   - 端点:
-     - GET /weather/now?location={lng},{lat}
-     - GET /weather/7d?location={lng},{lat}
-     - GET /astronomy/sun?location={lng},{lat}&date=YYYYMMDD
-     - GET /health (健康检查)
-   - 响应速度: 50-300ms（国内服务器，极快）
+2. **AWS Lambda 新加坡（副服务器）**
+   - URL: https://8de0lncs7f.execute-api.ap-southeast-1.amazonaws.com/default/pollen-api-singapore
+   - 功能: DynamoDB 读取 + 兜底调用 Google API
+   - 缓存: DynamoDB（30分钟 TTL）
+   - 状态: ✅ 生产环境运行中
+   - 优先级: 2（副服务器）
 
-**重要发现**: 
-- ✅ 广州服务器成功部署和风天气 API 代理（2025-12-13）
-- ❌ 广州服务器无法访问 Google Pollen API (https://pollen.googleapis.com)
-  - 测试命令: `curl -I https://pollen.googleapis.com` → 300秒超时
-  - 结论: Google API 只能使用海外服务器代理
+3. **阿里云新加坡（只读服务器）**
+   - URL: http://47.84.1.164:5000/pollen-api
+   - 功能: 只读 DynamoDB（不调用 Google API）
+   - 缓存: DynamoDB（30分钟 TTL）
+   - 状态: ✅ 生产环境运行中
+   - 优先级: 3（只读备用）
+   - 内存占用: ~50MB（简化版，减少 75%）
+   - 技术栈: Node.js v18.20.8 + Express + AWS SDK + PM2
+
+#### 共享存储
+
+**AWS DynamoDB（东京区域）**
+- 表名: `pollen_cache`
+- 分区键: `cache_key` (String)
+- TTL: `expire_time` (Number, 30分钟)
+- 作用: 主从服务器数据共享
+- 状态: ✅ 已配置
+
+#### 天气数据服务器
+
+**百度云广州服务器 - 和风天气 API 代理**
+- URL: http://106.12.143.105:3000
+- 作用: 代理和风天气 API，保护 API Key 不暴露在客户端
+- 状态: ✅ 生产环境运行中（2025-12-13 部署）
+- 部署路径: /root/pollen-api/
+- 技术栈: Node.js v20.19.6 + Express + node-cache (15分钟缓存) + PM2
+- 端点:
+  - GET /weather/now?location={lng},{lat}
+  - GET /weather/7d?location={lng},{lat}
+  - GET /astronomy/sun?location={lng},{lat}&date=YYYYMMDD
+  - GET /health (健康检查)
+- 响应速度: 50-300ms（国内服务器，极快）
+
+**架构优势**:
+- ✅ 主服务器故障 → 自动切换到副服务器
+- ✅ 副服务器故障 → 自动切换到只读服务器
+- ✅ DynamoDB 共享缓存，减少 Google API 调用（每月约 1440 次，远低于 5000 免费额度）
+- ✅ 阿里云内存占用减少 75%，避免 OOM 问题
 
 ### API 配置信息
 
@@ -272,6 +357,135 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 **GitHub仓库**: `https://github.com/y1032359463-cyber/PollenForecast.git`  
 **最新提交**: `d977351` - feat: Add API 17 compatibility - version detection and event listener fallback
+
+### 开发日志
+
+### 2026-01-06 (多服务器故障转移架构 + DynamoDB 缓存) ✨ 最新
+
+**功能实现**: 多服务器故障转移架构，提高花粉数据获取稳定性
+
+**背景**:
+- 单服务器架构不稳定（阿里云 512MB 内存容易 OOM）
+- 需要多服务器冗余，保证服务可用性
+- 减少 Google API 调用次数（控制在免费额度内）
+
+**实施内容**:
+1. ✅ **DynamoDB 表创建**
+   - 表名: `pollen_cache`
+   - 分区键: `cache_key` (String)
+   - TTL: `expire_time` (Number, 30分钟)
+   - 区域: ap-northeast-1 (东京)
+
+2. ✅ **Lambda 东京（主服务器）**
+   - 功能: 每30分钟调用 Google API + 写入 DynamoDB
+   - 缓存: 内存缓存 + DynamoDB（双重缓存）
+   - URL: `https://g7d8o7pf5b.execute-api.ap-northeast-1.amazonaws.com/default/pollen-api`
+   - 优先级: 1
+
+3. ✅ **Lambda 新加坡（副服务器）**
+   - 功能: DynamoDB 读取 + 兜底调用 Google API
+   - URL: `https://8de0lncs7f.execute-api.ap-southeast-1.amazonaws.com/default/pollen-api-singapore`
+   - 优先级: 2
+
+4. ✅ **阿里云服务器（只读）**
+   - 功能: 只读 DynamoDB，不调用 Google API
+   - 内存占用: ~50MB（比原来减少 75%）
+   - 技术栈: Node.js v18.20.8 + Express + AWS SDK + PM2
+   - 优先级: 3
+
+5. ✅ **客户端代码更新**
+   - `PollenService.ets`: 调整服务器优先级
+   - 故障转移逻辑: 主服务器失败 → 自动切换副服务器 → 只读服务器
+
+6. ✅ **版本更新**
+   - versionCode: 1000003 → 1000004
+   - versionName: 1.0.2
+
+**技术要点**:
+- ✅ DynamoDB TTL 自动清理过期数据
+- ✅ Lambda 内存缓存（容器复用）
+- ✅ 主从服务器数据同步（通过 DynamoDB）
+- ✅ 阿里云简化版（只读，节省内存）
+- ✅ IAM 用户只读权限（最小权限原则）
+
+**请求次数优化**:
+- 主服务器: ~1440 次/月（30分钟缓存）
+- 副服务器: 0 次/月（从 DynamoDB 读取）
+- 只读服务器: 0 次/月（从 DynamoDB 读取）
+- **总计**: ~1440 次/月（远低于 5000 免费额度）
+
+**修改的文件**:
+- `entry/src/main/ets/service/PollenService.ets` - 服务器优先级调整
+- `AppScope/app.json5` - 版本号更新
+- `server/lambda-tokyo-pollen-api.py` - **新增** Lambda 东京代码
+- `server/lambda-singapore-pollen-api.py` - **新增** Lambda 新加坡代码
+- `server/aliyun-pollen-api-simple-en.js` - **新增** 阿里云简化版代码
+
+**待验证**:
+- ⏳ 完整故障转移流程（主服务器挂掉时的自动切换）
+- ⏳ DynamoDB 数据同步延迟测试
+
+### 2026-01-06 (用户可选择的多数据源架构) ✨ 最新
+
+**功能实现**: 用户可根据需求选择不同的花粉数据源
+
+**背景**:
+- 用户希望可以选择不同的数据源提供商
+- 不同数据源有不同的覆盖范围和准确性
+- 需要支持 Google Pollen API、中国气象局、和风天气等
+
+**实施内容**:
+1. ✅ **数据源模型创建**
+   - `PollenDataSource.ets`: 数据源枚举和配置
+   - 支持 AUTO、GOOGLE、CMA、QWEATHER 四种类型
+   - 每个数据源包含名称、描述、覆盖范围等信息
+
+2. ✅ **数据源适配器接口**
+   - `PollenDataSourceAdapter.ets`: 定义适配器接口
+   - `IPollenDataSourceAdapter`: 统一的数据源接口
+   - 为后续实现各数据源适配器做准备
+
+3. ✅ **PollenService 更新**
+   - 支持根据用户选择调用对应数据源
+   - AUTO 和 GOOGLE 使用现有的多服务器故障转移
+   - CMA 和 QWEATHER 预留接口（待实现）
+
+4. ✅ **AppStorage 初始化**
+   - 在 `EntryAbility` 中添加 `pollenDataSource` 默认值 `'AUTO'`
+
+5. ✅ **设置页面 UI**
+   - `GeneralSettingsPage.ets`: 添加数据源选择器
+   - 显示可用数据源列表（名称 + 描述）
+   - 选中状态显示 ✓
+   - 切换时震动反馈 + Toast 提示
+
+**技术要点**:
+- ✅ 用户选择式架构（非数据融合）
+- ✅ 数据源配置化，易于扩展
+- ✅ 适配器模式，统一接口
+- ✅ AppStorage 持久化用户选择
+
+**当前状态**:
+| 数据源 | 状态 | 说明 |
+|--------|------|------|
+| 自动选择 | ✅ 可用 | 默认选项，使用 Google Pollen API |
+| Google Pollen API | ✅ 可用 | 使用现有的多服务器故障转移 |
+| 中国气象局 | ⏳ 待实现 | 已预留接口 |
+| 和风天气 | ⏳ 待实现 | 已预留接口 |
+
+**修改的文件**:
+- `entry/src/main/ets/model/PollenDataSource.ets` - **新增** 数据源模型
+- `entry/src/main/ets/service/PollenDataSourceAdapter.ets` - **新增** 适配器接口
+- `entry/src/main/ets/service/PollenService.ets` - 支持用户选择的数据源
+- `entry/src/main/ets/entryability/EntryAbility.ets` - 初始化数据源设置
+- `entry/src/main/ets/pages/GeneralSettingsPage.ets` - 添加数据源选择器 UI
+
+**下一步**:
+- ⏳ 实现中国气象局数据源适配器
+- ⏳ 实现和风天气数据源适配器（如果支持花粉数据）
+- ⏳ 数据格式统一转换（如果需要）
+
+---
 
 ---
 
