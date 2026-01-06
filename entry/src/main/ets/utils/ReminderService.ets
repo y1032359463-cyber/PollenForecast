@@ -39,6 +39,23 @@ export class ReminderService {
   }
 
   /**
+   * 取消所有提醒（清理旧数据）
+   */
+  async cancelAllReminders(): Promise<void> {
+    try {
+      // 使用 cancelAllReminders API 直接取消所有提醒
+      await reminderAgentManager.cancelAllReminders();
+      
+      this.reminderId = -1;
+      AppStorage.delete(REMINDER_ID_KEY);
+      hilog.info(DOMAIN, TAG, `✅ 已清理所有旧提醒`);
+    } catch (err) {
+      const error = err as BusinessError;
+      hilog.error(DOMAIN, TAG, `清理旧提醒失败: ${error.code} - ${error.message}`);
+    }
+  }
+
+  /**
    * 设置每日定时提醒
    * @param timeStr 时间字符串，格式 "HH:mm"
    * @returns 是否设置成功
@@ -57,10 +74,8 @@ export class ReminderService {
         return false;
       }
 
-      // 如果已有提醒，先取消
-      if (this.reminderId !== -1) {
-        await this.cancelReminder();
-      }
+      // ⚠️ 先清理所有旧提醒（解决数量超限问题）
+      await this.cancelAllReminders();
 
       // 创建闹钟提醒请求（每天重复）
       const reminderRequest: reminderAgentManager.ReminderRequestAlarm = {

@@ -8,11 +8,21 @@
 
 ## 🚨 当前状态概要（新窗口必读）
 
+### ⚠️ 当前状态（2026-01-07 新窗口必读）
+
+**定时提醒功能已实现，但需要清理缓存后重新构建：**
+```powershell
+# 删除 build 目录清理缓存
+Remove-Item -Recurse -Force "C:\HarmonyOS_App_Plans\PollenForecast\entry\build"
+# 然后 Build → Rebuild Project
+```
+
 ### ✅ 本次会话完成（2026-01-07）
 1. **🎉 定时提醒功能修复**（AppGallery 审核问题解决）
    - 发现 `reminderAgentManager` 正确导入方式：`@kit.BackgroundTasksKit`（非 `@kit.NotificationKit`）
    - 创建 `ReminderService.ets` - 代理提醒服务
    - 更新 `NotificationService.ets` - 调用 ReminderService
+   - 添加 `cancelAllReminders()` 方法解决提醒数量超限问题
    - 权限：`ohos.permission.PUBLISH_AGENT_REMINDER`
    - 参考文档：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-reminderagentmanager
 
@@ -24,6 +34,10 @@
    // ❌ 错误导入（所有专家之前给的都是错的）
    import { reminderAgentManager } from '@kit.NotificationKit';
    ```
+
+3. **已知问题**
+   - 错误码 `1700002`: 提醒数量超限 → 已添加 `cancelAllReminders()` 解决
+   - 编译缓存问题 → 删除 `entry/build` 目录后重新构建
 
 ### ✅ 上次会话完成（2026-01-06）
 1. **多服务器故障转移架构**
