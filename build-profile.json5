@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "C:/Users/Lenovo/证书/花粉浓度预报/111.p12",
-          "storePassword": "000000194C9832183C5037A0A6C654C0E3E3C1DCB8663E6474EEC0FBB7721ED288F8BFC4681A635BF1",
-          "keyAlias": "PollenForecast",
-          "keyPassword": "000000190827B88CA50C63057F41DCAC996024675E41805197E918B0301D2064342D6D822DB7558C36",
+          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BC91BE65201DE8F69CF4E9AA875E337B27192025EFB649DA137E424D9D675B6D83D5355DFD6DF90",
+          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.p7b",
           "signAlg": "SHA256withECDSA",
-          "profile": "C:/Users/Lenovo/证书/花粉浓度预报/PollenForecastRelease.p7b",
-          "certpath": "C:/Users/Lenovo/证书/花粉浓度预报/PollenForecast.cer"
+          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.p12",
+          "storePassword": "0000001BC61545114EA841DE2F372DBF1828FAEA32DA5225DB97036922722B372FD4967525CDEE34C07B41"
         }
       }
     ],

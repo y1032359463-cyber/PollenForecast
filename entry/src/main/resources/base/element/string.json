@@ -43,6 +43,10 @@
     {
       "name": "widget_description",
       "value": "显示当前花粉浓度和风险等级"
+    },
+    {
+      "name": "daily_report_task_desc",
+      "value": "每日播报后台任务，用于定时发送花粉浓度提醒"
     }
   ]
 }

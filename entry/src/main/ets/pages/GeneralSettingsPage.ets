@@ -8,7 +8,7 @@ import { router, promptAction } from '@kit.ArkUI'
 import { vibrator } from '@kit.SensorServiceKit'
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { ApiVersionUtils } from '../utils/ApiVersionUtils'  // API 版本检测工具
-import { PollenDataSourceType, POLLEN_DATA_SOURCES, getDataSourceName } from '../model/PollenDataSource'
+import { PollenDataSourceType, POLLEN_DATA_SOURCES, getDataSourceName, PollenDataSourceConfig } from '../model/PollenDataSource'
 
 @Entry
 @Component
@@ -288,7 +288,7 @@ struct GeneralSettingsPage {
               .padding({ bottom: 8 })
 
             Column() {
-              ForEach(POLLEN_DATA_SOURCES.filter(s => s.enabled), (source, index) => {
+              ForEach(POLLEN_DATA_SOURCES.filter(s => s.enabled), (source: PollenDataSourceConfig, index: number) => {
                 Row() {
                   Column() {
                     Text(source.name)

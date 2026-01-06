@@ -5,7 +5,7 @@
 
 import { notificationManager } from '@kit.NotificationKit'
 import { hilog } from '@kit.PerformanceAnalysisKit'
-import { wantAgent } from '@kit.AbilityKit'
+import { wantAgent, common } from '@kit.AbilityKit'
 
 const DOMAIN = 0x0001;
 const TAG = 'NotificationService';
@@ -13,8 +13,16 @@ const TAG = 'NotificationService';
 export class NotificationService {
   private static instance: NotificationService;
   private slotInitialized: boolean = false;
+  private context?: common.UIAbilityContext;
 
   private constructor() {}
+
+  /**
+   * 设置 Ability Context（用于 WorkScheduler）
+   */
+  setContext(context: common.UIAbilityContext): void {
+    this.context = context;
+  }
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -237,6 +245,8 @@ export class NotificationService {
   /**
    * 设置每日播报定时提醒
    * @param timeStr 时间字符串，格式: "08:00"
+   * 
+   * TODO: 待咨询专家确认 WorkScheduler API 正确用法
    */
   async scheduleDailyReminder(timeStr: string): Promise<boolean> {
     try {
@@ -252,11 +262,13 @@ export class NotificationService {
         return false;
       }
 
-      // 保存定时播报时间（仅存储配置，实际定时由后台任务实现）
+      // 保存定时播报时间
       AppStorage.setOrCreate('dailyReminderTime', timeStr);
       hilog.info(DOMAIN, TAG, `已保存定时播报时间: ${timeStr}`);
-      hilog.info(DOMAIN, TAG, '⚠️ 定时播报功能需要后台任务支持，当前版本仅保存配置');
-      
+
+      // TODO: 待咨询专家后实现 WorkScheduler 定时任务
+      hilog.warn(DOMAIN, TAG, '⚠️ 定时任务实现待专家确认');
+
       return true;
     } catch (err) {
       hilog.error(DOMAIN, TAG, `设置定时提醒失败: ${JSON.stringify(err)}`);
@@ -281,12 +293,6 @@ export class NotificationService {
    * 检查定时提醒权限
    */
   async checkReminderPermission(): Promise<boolean> {
-    try {
-      // API 20 暂无直接检查方法，尝试发布测试提醒
-      return true;
-    } catch (err) {
-      hilog.error(DOMAIN, TAG, `检查提醒权限失败: ${JSON.stringify(err)}`);
-      return false;
-    }
+    return true;
   }
 }

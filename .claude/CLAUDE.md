@@ -349,6 +349,8 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 | 备份时间 | 版本 | 路径 | 大小 | 说明 |
 |---------|------|------|------|------|
+| 2026-01-06 01:41 | v1.0.2 | Git 提交 `6655b3b` | - | 用户可选择的多数据源架构（PollenDataSource + 适配器接口 + 设置UI） |
+| 2026-01-06 01:41 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260106_014100` | - | 多数据源架构完成后的备份 |
 | 2026-01-05 17:30 | v1.0.1 | Git 提交 `d977351` | - | API 17 兼容性实施（ApiVersionUtils + 事件监听兼容） |
 | 2026-01-05 16:21 | v1.0.1 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.1_20260105_162141` | 15.85 MB | API 17兼容性咨询文档 + MapKit功能清单 |
 | 2025-12-12 23:34 | v1.0.1 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.1_20251212_233433` | 1.73 MB | 交互优化 + 服务器架构完成后的精简可运行版本 |
@@ -356,7 +358,7 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 **备份内容**: AppScope、entry/src、配置文件、文档（排除 build/、oh_modules/、figma/、server/）
 
 **GitHub仓库**: `https://github.com/y1032359463-cyber/PollenForecast.git`  
-**最新提交**: `d977351` - feat: Add API 17 compatibility - version detection and event listener fallback
+**最新提交**: `6655b3b` - feat: Add user-selectable multi-data-source architecture
 
 ### 开发日志
 
