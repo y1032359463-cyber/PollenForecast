@@ -288,7 +288,7 @@ struct GeneralSettingsPage {
               .padding({ bottom: 8 })
 
             Column() {
-              ForEach(POLLEN_DATA_SOURCES.filter(s => s.enabled), (source: PollenDataSourceConfig, index: number) => {
+              ForEach(POLLEN_DATA_SOURCES.filter((s: PollenDataSourceConfig) => s.enabled), (source: PollenDataSourceConfig, index: number) => {
                 Row() {
                   Column() {
                     Text(source.name)

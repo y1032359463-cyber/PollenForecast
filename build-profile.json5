@@ -7,11 +7,11 @@
         "material": {
           "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001BC91BE65201DE8F69CF4E9AA875E337B27192025EFB649DA137E424D9D675B6D83D5355DFD6DF90",
+          "keyPassword": "0000001BCF5D876ACAFF574EDE271BE4BA1F50FBFF7A7E886FAF5452A2E074B5F86FF4E9DA964C63C1DDDA",
           "profile": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\default_PollenForecast_0swAGkb93RRBoZB-UrmTiB5oPX6qMnOawOOneh1bUjM=.p12",
-          "storePassword": "0000001BC61545114EA841DE2F372DBF1828FAEA32DA5225DB97036922722B372FD4967525CDEE34C07B41"
+          "storePassword": "0000001BABA1B0DF55317EFE51856EFC0A22FF68EFC3B087AE045318623DF7CFF3CC6FCC6FAAB41A5D9597"
         }
       }
     ],

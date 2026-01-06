@@ -178,60 +178,12 @@ export default class EntryAbility extends UIAbility {
 
   /**
    * 检查并发送每日播报（应用启动时调用）
+   * 调用 NotificationService 的统一方法
    */
   private async checkAndSendDailyReport(): Promise<void> {
     try {
-      // 检查每日播报开关
-      const dailyReportEnabled = AppStorage.get<boolean>('dailyReportEnabled') ?? false;
-      if (!dailyReportEnabled) {
-        return;
-      }
-
-      // 检查通知总开关
-      const notificationEnabled = AppStorage.get<boolean>('notificationEnabled') ?? false;
-      if (!notificationEnabled) {
-        return;
-      }
-
-      // 获取设置的播报时间
-      const reportTimeStr = AppStorage.get<string>('dailyReminderTime') ?? AppStorage.get<string>('dailyReportTime') ?? '08:00';
-      const timeParts: string[] = reportTimeStr.split(':');
-      const hour = parseInt(timeParts[0]);
-      const minute = parseInt(timeParts[1]);
-
-      if (isNaN(hour) || isNaN(minute)) {
-        return;
-      }
-
-      // 检查当前时间是否在播报时间前后5分钟内
-      const now = new Date();
-      const reportTime = new Date();
-      reportTime.setHours(hour, minute, 0, 0);
-
-      const diffMinutes = (now.getTime() - reportTime.getTime()) / (1000 * 60);
-      
-      // 如果当前时间在播报时间后5分钟内，且今天还没有发送过，则发送通知
-      if (diffMinutes >= 0 && diffMinutes <= 5) {
-        // 检查今天是否已发送（通过检查上次发送时间）
-        const lastSendDate = AppStorage.get<string>('lastDailyReportDate');
-        const todayStr = now.toDateString();
-        
-        if (lastSendDate !== todayStr) {
-          hilog.info(DOMAIN, 'testTag', '检测到到达播报时间，发送每日播报');
-          
-          // 获取花粉数据并发送通知
-          const notificationService = NotificationService.getInstance();
-          const city = AppStorage.get<string>('currentCity') ?? '当前位置';
-          const latitude = AppStorage.get<number>('latitude') ?? 23.1291;
-          const longitude = AppStorage.get<number>('longitude') ?? 113.2644;
-          
-          // 这里需要获取花粉数据，但为了避免阻塞，可以异步处理
-          // 实际发送逻辑在 DailyReportTask 中实现
-          
-          // 标记今天已发送
-          AppStorage.setOrCreate('lastDailyReportDate', todayStr);
-        }
-      }
+      const notificationService = NotificationService.getInstance();
+      await notificationService.checkAndSendDailyReport();
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', `检查每日播报失败: ${JSON.stringify(err)}`);
     }

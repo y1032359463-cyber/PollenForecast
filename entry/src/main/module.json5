@@ -50,6 +50,14 @@
           "abilities": ["EntryAbility"],
           "when": "inuse"
         }
+      },
+      {
+        "name": "ohos.permission.PUBLISH_AGENT_REMINDER",
+        "reason": "$string:reminder_permission_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
       }
     ],
     "deliveryWithInstall": true,
@@ -94,7 +102,7 @@
             "name": "ohos.extension.backup",
             "resource": "$profile:backup_config"
           }
-        ],
+        ]
       },
       {
         "name": "EntryFormAbility",
@@ -108,13 +116,6 @@
             "resource": "$profile:form_config"
           }
         ]
-      },
-      {
-        "name": "DailyReportTask",
-        "srcEntry": "./ets/extensionability/DailyReportTask.ets",
-        "type": "service",
-        "exported": false,
-        "description": "$string:daily_report_task_desc"
       }
     ]
   }

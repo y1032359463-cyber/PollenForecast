@@ -47,6 +47,14 @@
     {
       "name": "daily_report_task_desc",
       "value": "每日播报后台任务，用于定时发送花粉浓度提醒"
+    },
+    {
+      "name": "background_permission_reason",
+      "value": "需要后台运行权限以在应用关闭后定时发送花粉提醒"
+    },
+    {
+      "name": "reminder_permission_reason",
+      "value": "需要代理提醒权限以设置每日花粉浓度定时提醒"
     }
   ]
 }
