@@ -10,6 +10,7 @@
 
 import { reminderAgentManager } from '@kit.BackgroundTasksKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { notificationManager } from '@kit.NotificationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x0001;
@@ -17,6 +18,11 @@ const TAG = 'ReminderService';
 
 // 提醒ID存储key
 const REMINDER_ID_KEY = 'dailyReminderAgentId';
+
+// 扩展 ReminderRequest 接口以包含 reminderId
+interface ReminderRequestWithId {
+  reminderId?: number;
+}
 
 export class ReminderService {
   private static instance: ReminderService;
@@ -40,15 +46,36 @@ export class ReminderService {
 
   /**
    * 取消所有提醒（清理旧数据）
+   * 注意：cancelAllReminders() 是系统API，普通应用无法调用
+   * 改用 getValidReminders() + cancelReminder(id) 逐个取消
    */
   async cancelAllReminders(): Promise<void> {
     try {
-      // 使用 cancelAllReminders API 直接取消所有提醒
-      await reminderAgentManager.cancelAllReminders();
+      // 获取当前所有有效提醒
+      const reminders = await reminderAgentManager.getValidReminders();
+      hilog.info(DOMAIN, TAG, `当前有效提醒数量: ${reminders.length}`);
+      
+      // 逐个取消（使用索引遍历，ArkTS 兼容）
+      for (let i = 0; i < reminders.length; i++) {
+        const reminder = reminders[i];
+        // 通过 JSON 序列化/反序列化获取 reminderId
+        const reminderStr = JSON.stringify(reminder);
+        const reminderObj: ReminderRequestWithId = JSON.parse(reminderStr) as ReminderRequestWithId;
+        const id = reminderObj.reminderId;
+        if (id !== undefined) {
+          try {
+            await reminderAgentManager.cancelReminder(id);
+            hilog.info(DOMAIN, TAG, `已取消提醒 ID: ${id}`);
+          } catch (cancelErr) {
+            const cancelError = cancelErr as BusinessError;
+            hilog.warn(DOMAIN, TAG, `取消提醒 ${id} 失败: ${cancelError.message}`);
+          }
+        }
+      }
       
       this.reminderId = -1;
       AppStorage.delete(REMINDER_ID_KEY);
-      hilog.info(DOMAIN, TAG, `✅ 已清理所有旧提醒`);
+      hilog.info(DOMAIN, TAG, `✅ 已清理所有旧提醒，共 ${reminders.length} 个`);
     } catch (err) {
       const error = err as BusinessError;
       hilog.error(DOMAIN, TAG, `清理旧提醒失败: ${error.code} - ${error.message}`);
@@ -78,16 +105,38 @@ export class ReminderService {
       await this.cancelAllReminders();
 
       // 创建闹钟提醒请求（每天重复）
+      // 关键配置：slotType 决定通知的表现形式（横幅/声音/震动）
       const reminderRequest: reminderAgentManager.ReminderRequestAlarm = {
         reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_ALARM,
         hour: hour,
         minute: minute,
-        daysOfWeek: [1, 2, 3, 4, 5, 6, 7], // 每天
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7], // 每天重复
         title: '🌼 花粉浓度播报',
         content: '今日花粉浓度信息已更新，点击查看详情',
+        expiredContent: '花粉播报已过期',
         snoozeContent: '稍后提醒',
-        ringDuration: 10  // 响铃10秒
+        notificationId: 1001, // 固定通知ID
+        slotType: notificationManager.SlotType.SOCIAL_COMMUNICATION, // 社交通信类型，会有横幅和声音
+        ringDuration: 10, // 响铃10秒
+        snoozeTimes: 2, // 稍后提醒次数
+        timeInterval: 5 * 60, // 稍后提醒间隔（秒）
+        actionButton: [
+          {
+            title: '稍后提醒',
+            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_SNOOZE
+          },
+          {
+            title: '关闭',
+            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+          }
+        ],
+        wantAgent: {
+          pkgName: 'com.eric.PollenForecast',
+          abilityName: 'EntryAbility'
+        }
       };
+
+      hilog.info(DOMAIN, TAG, `提醒配置: hour=${hour}, minute=${minute}`);
 
       // 发布提醒
       this.reminderId = await reminderAgentManager.publishReminder(reminderRequest);
@@ -138,4 +187,3 @@ export class ReminderService {
     }
   }
 }
-

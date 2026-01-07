@@ -8,36 +8,47 @@
 
 ## 🚨 当前状态概要（新窗口必读）
 
-### ⚠️ 当前状态（2026-01-07 新窗口必读）
+### ⚠️ 当前状态（2026-01-07 更新）
 
-**定时提醒功能已实现，但需要清理缓存后重新构建：**
+**定时提醒功能已完善，需要重新构建测试：**
 ```powershell
 # 删除 build 目录清理缓存
 Remove-Item -Recurse -Force "C:\HarmonyOS_App_Plans\PollenForecast\entry\build"
 # 然后 Build → Rebuild Project
 ```
 
-### ✅ 本次会话完成（2026-01-07）
+### ✅ 本次会话完成（2026-01-07 第3轮）
+1. **🐛 错别字修复**
+   - `ReminderService.ets`: "稀后提醒" → "稍后提醒"（4处）
+
+2. **🔧 ArkTS 语法错误修复**
+   - `LocationService.ets`: 修复对象字面量类型错误
+   - 添加 `AddressInfo` 接口替代 `{ city: string, address: string }`
+   - 错误码: `arkts-no-obj-literals-as-types` / `arkts-no-untyped-obj-literals`
+
+3. **📚 知识库更新**
+   - 追加对象字面量类型禁止规则到 `知识库/ArkTS语法.md`
+
+### ✅ 上次会话完成（2026-01-07 第2轮）
+1. **🔔 定时提醒通知配置完善**
+   - 添加 `slotType: SOCIAL_COMMUNICATION` → 横幅+声音+震动
+   - 添加 `actionButton` → 稍后提醒/关闭按钮
+   - 添加 `wantAgent` → 点击通知打开应用
+   - 添加 `notificationId` → 固定通知ID
+   - 修复 `cancelAllReminders()` → 使用 `getValidReminders()` + 逐个取消
+
+2. **🔐 权限动态申请**
+   - `EntryAbility.ets` 新增 `requestReminderPermission()` 方法
+   - 应用启动时自动申请 `PUBLISH_AGENT_REMINDER` 权限
+
+3. **❌ 锁屏卡片**
+   - 普通应用无法申请，不做此功能
+
+### ✅ 上次会话完成（2026-01-07 第1轮）
 1. **🎉 定时提醒功能修复**（AppGallery 审核问题解决）
-   - 发现 `reminderAgentManager` 正确导入方式：`@kit.BackgroundTasksKit`（非 `@kit.NotificationKit`）
+   - 发现 `reminderAgentManager` 正确导入方式：`@kit.BackgroundTasksKit`
    - 创建 `ReminderService.ets` - 代理提醒服务
-   - 更新 `NotificationService.ets` - 调用 ReminderService
-   - 添加 `cancelAllReminders()` 方法解决提醒数量超限问题
    - 权限：`ohos.permission.PUBLISH_AGENT_REMINDER`
-   - 参考文档：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-reminderagentmanager
-
-2. **关键知识点**
-   ```typescript
-   // ✅ 正确导入
-   import { reminderAgentManager } from '@kit.BackgroundTasksKit';
-   
-   // ❌ 错误导入（所有专家之前给的都是错的）
-   import { reminderAgentManager } from '@kit.NotificationKit';
-   ```
-
-3. **已知问题**
-   - 错误码 `1700002`: 提醒数量超限 → 已添加 `cancelAllReminders()` 解决
-   - 编译缓存问题 → 删除 `entry/build` 目录后重新构建
 
 ### ✅ 上次会话完成（2026-01-06）
 1. **多服务器故障转移架构**

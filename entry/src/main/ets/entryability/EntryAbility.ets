@@ -63,9 +63,13 @@ export default class EntryAbility extends UIAbility {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
     console.info('🔵 [EntryAbility] onWindowStageCreate 调用');
 
-    // 在窗口创建阶段请求定位权限（修正生命周期）
+    // 在窗口创建阶段请求权限（修正生命周期）
     console.info('🔵 [EntryAbility] 准备请求定位权限');
     this.requestLocationPermissions();
+    
+    // 请求代理提醒权限（用于定时通知）
+    console.info('🔵 [EntryAbility] 准备请求代理提醒权限');
+    this.requestReminderPermission();
 
     // 获取主窗口并设置沉浸式状态栏
     const mainWindow = windowStage.getMainWindowSync();
@@ -237,6 +241,39 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       console.error('❌ [EntryAbility] 请求定位权限失败: ' + JSON.stringify(err));
       hilog.error(DOMAIN, 'testTag', '❌ 请求定位权限失败: %{public}s', JSON.stringify(err));
+    }
+  }
+
+  /**
+   * 请求代理提醒权限（用于定时通知）
+   * 权限：ohos.permission.PUBLISH_AGENT_REMINDER
+   */
+  private async requestReminderPermission(): Promise<void> {
+    console.info('🟢 [EntryAbility] requestReminderPermission 开始执行');
+    
+    const permissions: Array<Permissions> = [
+      'ohos.permission.PUBLISH_AGENT_REMINDER'
+    ];
+
+    try {
+      const atManager = abilityAccessCtrl.createAtManager();
+      
+      console.info('🔔 [EntryAbility] 请求代理提醒权限');
+      const grantStatus = await atManager.requestPermissionsFromUser(this.context, permissions);
+      
+      console.info('🔔 [EntryAbility] 代理提醒权限结果: ' + JSON.stringify(grantStatus.authResults));
+      
+      // 检查权限是否被授予
+      if (grantStatus.authResults[0] === 0) {
+        console.info('✅ [EntryAbility] 代理提醒权限已授予');
+        hilog.info(DOMAIN, 'testTag', '✅ 代理提醒权限已授予');
+      } else {
+        console.warn('⚠️ [EntryAbility] 代理提醒权限被拒绝');
+        hilog.warn(DOMAIN, 'testTag', '⚠️ 代理提醒权限被拒绝');
+      }
+    } catch (err) {
+      console.error('❌ [EntryAbility] 请求代理提醒权限失败: ' + JSON.stringify(err));
+      hilog.error(DOMAIN, 'testTag', '❌ 请求代理提醒权限失败: %{public}s', JSON.stringify(err));
     }
   }
 }

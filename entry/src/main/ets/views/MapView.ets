@@ -772,7 +772,7 @@ export struct MapView {
     })
   }
 
-  // ========== 定位按钮点击处理 ==========
+  // ========== 定位按钮点击处理（优化：快速响应）==========
   private async handleCustomLocationClick() {
     if (this.isLocating) {
       return  // 防止重复点击
@@ -789,17 +789,50 @@ export struct MapView {
     }
 
     this.isLocating = true
+    const startTime = Date.now()
+    
     try {
-      const location = await this.locationService.getCurrentLocation()
-      if (location) {
-        // 更新 AppStorage（触发 RegionView、MapView 同步更新）
-        AppStorage.setOrCreate('latitude', location.latitude)
-        AppStorage.setOrCreate('longitude', location.longitude)
-        AppStorage.setOrCreate('currentCity', location.city || '当前位置')
-
+      // 1. 优先使用缓存位置（毫秒级响应）
+      const cachedLocation = this.locationService.getCachedLocation()
+      if (cachedLocation) {
+        // 立即更新 UI
+        AppStorage.setOrCreate('latitude', cachedLocation.latitude)
+        AppStorage.setOrCreate('longitude', cachedLocation.longitude)
+        if (cachedLocation.city && cachedLocation.city !== '当前位置') {
+          AppStorage.setOrCreate('currentCity', cachedLocation.city)
+        }
+        // 移动地图
+        this.moveCameraToLocation(cachedLocation.latitude, cachedLocation.longitude)
+        
+        console.info(`[MapView] ⚡ 使用缓存位置 (${Date.now() - startTime}ms)`)
+        
+        // 后台获取更精确位置
+        this.updateLocationInBackground()
+        
         promptAction.showToast({
           message: '定位成功',
-          duration: 1500
+          duration: 1000
+        })
+        this.isLocating = false
+        return
+      }
+
+      // 2. 快速定位（基站优先，2秒内返回）
+      const location = await this.locationService.getQuickLocation()
+      if (location) {
+        // 更新 AppStorage（触发同步更新）
+        AppStorage.setOrCreate('latitude', location.latitude)
+        AppStorage.setOrCreate('longitude', location.longitude)
+        if (location.city && location.city !== '当前位置') {
+          AppStorage.setOrCreate('currentCity', location.city)
+        }
+        // 移动地图
+        this.moveCameraToLocation(location.latitude, location.longitude)
+
+        console.info(`[MapView] ⚡ 快速定位成功 (${Date.now() - startTime}ms)`)
+        promptAction.showToast({
+          message: '定位成功',
+          duration: 1000
         })
       } else {
         promptAction.showToast({
@@ -816,6 +849,25 @@ export struct MapView {
     } finally {
       this.isLocating = false
     }
+  }
+
+  // 后台更新更精确位置
+  private updateLocationInBackground(): void {
+    setTimeout(async () => {
+      try {
+        const location = await this.locationService.getCurrentLocation()
+        if (location) {
+          AppStorage.setOrCreate('latitude', location.latitude)
+          AppStorage.setOrCreate('longitude', location.longitude)
+          if (location.city && location.city !== '当前位置') {
+            AppStorage.setOrCreate('currentCity', location.city)
+          }
+          console.info('[MapView] 🔄 后台位置已更新')
+        }
+      } catch (e) {
+        console.warn('[MapView] 后台更新位置失败')
+      }
+    }, 100)
   }
 
   // ========== 自定义定位浮动按钮 ==========

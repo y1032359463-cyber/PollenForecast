@@ -1,0 +1,1537 @@
+/*
+ * 花粉浓度预报（鸿蒙版）V1.0.2 源代码
+ * 后30页
+ * 
+ * 格式要求：
+ * 1. 页眉：花粉浓度预报（鸿蒙版）V1.0.2 源代码
+ * 2. 每页≥50行
+ * 3. 字体：等宽字体（如 Consolas、Source Code Pro），10-11pt
+ * 4. 行距：单倍行距
+ * 
+ * 导出PDF步骤：
+ * 1. 将本文档内容粘贴到 Microsoft Word
+ * 2. 设置页眉：插入 -> 页眉 -> 输入"花粉浓度预报（鸿蒙版）V1.0.2 源代码"
+ * 3. 设置字体：全选 -> Consolas 10pt，单倍行距
+ * 4. 调整页边距和行距，确保每页≥50行
+ * 5. 添加页码（第31页开始）
+ * 6. 导出PDF：文件 -> 另存为 -> PDF格式
+ */
+// 文件: entry/src/main/ets/service/PollenService.ets
+import { http } from '@kit.NetworkKit'
+import { PollenForecastResponse } from '../model/PollenModels'
+import { PollenDataSourceType } from '../model/PollenDataSource'
+interface ServerConfig {
+  name: string
+  url: string
+  timeout: number
+  priority: number
+}
+interface ServerStatus {
+  lastSuccess: number
+  failCount: number
+  isHealthy: boolean
+}
+const POLLEN_SERVERS: ServerConfig[] = [
+  {
+    name: 'AWS Lambda 东京',
+    url: 'https://g7d8o7pf5b.execute-api.ap-northeast-1.amazonaws.com/default/pollen-api',
+    timeout: 20000,
+    priority: 1
+  },
+  {
+    name: 'AWS Lambda 新加坡',
+    url: 'https://8de0lncs7f.execute-api.ap-southeast-1.amazonaws.com/default/pollen-api-singapore',
+    timeout: 20000,
+    priority: 2
+  },
+  {
+    name: '阿里云新加坡',
+    url: 'http://47.84.1.164:5000/pollen-api',
+    timeout: 15000,
+    priority: 3
+  },
+]
+const serverStatusMap: Map<string, ServerStatus> = new Map()
+const HEALTH_CHECK_INTERVAL = 5 * 60 * 1000
+const MAX_FAIL_COUNT = 3
+export class PollenService {
+  private static instance: PollenService | null = null
+  private constructor() {
+    this.initServerStatus()
+  }
+  static getInstance(): PollenService {
+    if (PollenService.instance === null) {
+      PollenService.instance = new PollenService()
+    }
+    return PollenService.instance
+  }
+  private initServerStatus(): void {
+    for (const server of POLLEN_SERVERS) {
+      if (!serverStatusMap.has(server.url)) {
+        serverStatusMap.set(server.url, {
+          lastSuccess: 0,
+          failCount: 0,
+          isHealthy: true
+        })
+      }
+    }
+  }
+  private getSortedServers(): ServerConfig[] {
+    const now = Date.now()
+    return POLLEN_SERVERS.slice().sort((a, b) => {
+      const statusA = serverStatusMap.get(a.url)
+      const statusB = serverStatusMap.get(b.url)
+      if (!statusA || !statusB) return a.priority - b.priority
+      if (statusA.isHealthy !== statusB.isHealthy) {
+        return statusA.isHealthy ? -1 : 1
+      }
+      if (statusA.lastSuccess !== statusB.lastSuccess) {
+        return statusB.lastSuccess - statusA.lastSuccess
+      }
+      return a.priority - b.priority
+    })
+  }
+  private markServerSuccess(serverUrl: string): void {
+    const status = serverStatusMap.get(serverUrl)
+    if (status) {
+      status.lastSuccess = Date.now()
+      status.failCount = 0
+      status.isHealthy = true
+      console.info(`[PollenService] 服务器成功: ${serverUrl}`)
+    }
+  }
+  private markServerFail(serverUrl: string): void {
+    const status = serverStatusMap.get(serverUrl)
+    if (status) {
+      status.failCount++
+      if (status.failCount >= MAX_FAIL_COUNT) {
+        status.isHealthy = false
+        console.warn(`[PollenService] 服务器标记为不健康: ${serverUrl}, 连续失败 ${status.failCount} 次`)
+      }
+    }
+  }
+  private shouldRetryServer(serverUrl: string): boolean {
+    const status = serverStatusMap.get(serverUrl)
+    if (!status) return true
+    if (status.isHealthy) return true
+    const timeSinceLastSuccess = Date.now() - status.lastSuccess
+    return timeSinceLastSuccess > HEALTH_CHECK_INTERVAL
+  }
+  private async requestFromServer(
+    server: ServerConfig,
+    latitude: number,
+    longitude: number,
+    days: number
+  ): Promise<PollenForecastResponse | null> {
+    const url = `${server.url}?lat=${latitude}&lng=${longitude}&days=${days}`
+    console.info(`[PollenService] 尝试服务器 [${server.name}]: ${url}`)
+    const httpRequest = http.createHttp()
+    try {
+      const response = await httpRequest.request(url, {
+        method: http.RequestMethod.GET,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        connectTimeout: server.timeout,
+        readTimeout: server.timeout
+      })
+      console.info(`[PollenService] [${server.name}] 响应码: ${response.responseCode}`)
+      if (response.responseCode === 200) {
+        const resultStr = response.result as string
+        const result: PollenForecastResponse = JSON.parse(resultStr)
+        console.info(`[PollenService] [${server.name}] 获取成功: ${result.regionCode}`)
+        httpRequest.destroy()
+        this.markServerSuccess(server.url)
+        return result
+      } else {
+        console.error(`[PollenService] [${server.name}] 请求失败: ${response.responseCode}`)
+        httpRequest.destroy()
+        this.markServerFail(server.url)
+        return null
+      }
+    } catch (error) {
+      console.error(`[PollenService] [${server.name}] 网络异常: ${JSON.stringify(error)}`)
+      httpRequest.destroy()
+      this.markServerFail(server.url)
+      return null
+    }
+  }
+  async getPollenForecast(
+    latitude: number,
+    longitude: number,
+    days: number = 5
+  ): Promise<PollenForecastResponse | null> {
+    const selectedDataSource: string = AppStorage.get('pollenDataSource') as string || 'AUTO'
+    const dataSourceType = selectedDataSource as PollenDataSourceType
+    console.info(`[PollenService] 用户选择的数据源: ${dataSourceType}`)
+    switch (dataSourceType) {
+      case PollenDataSourceType.AUTO:
+      case PollenDataSourceType.GOOGLE:
+        return await this.getPollenForecastFromGoogle(latitude, longitude, days)
+      case PollenDataSourceType.CMA:
+        console.warn('[PollenService] 中国气象局数据源暂未实现')
+        return null
+      case PollenDataSourceType.QWEATHER:
+        console.warn('[PollenService] 和风天气数据源暂未实现')
+        return null
+      default:
+        console.error(`[PollenService] 未知的数据源类型: ${dataSourceType}`)
+        return await this.getPollenForecastFromGoogle(latitude, longitude, days)
+    }
+  }
+  private async getPollenForecastFromGoogle(
+    latitude: number,
+    longitude: number,
+    days: number
+  ): Promise<PollenForecastResponse | null> {
+    const servers = this.getSortedServers()
+    console.info(`[PollenService] 开始请求 Google Pollen API，可用服务器: ${servers.length}`)
+    for (const server of servers) {
+      if (!this.shouldRetryServer(server.url)) {
+        console.info(`[PollenService] 跳过不健康服务器: ${server.name}`)
+        continue
+      }
+      const result = await this.requestFromServer(server, latitude, longitude, days)
+      if (result !== null) {
+        return result
+      }
+      console.warn(`[PollenService] [${server.name}] 失败，尝试下一个服务器...`)
+    }
+    console.error('[PollenService] 所有 Google Pollen API 服务器均请求失败')
+    return null
+  }
+  getServerStatus(): string {
+    const statusList: string[] = []
+    for (const server of POLLEN_SERVERS) {
+      const status = serverStatusMap.get(server.url)
+      if (status) {
+        statusList.push(
+          `${server.name}: ${status.isHealthy ? '✅健康' : '❌不健康'} (失败${status.failCount}次)`
+        )
+      }
+    }
+    return statusList.join(', ')
+  }
+  resetServerStatus(): void {
+    for (const server of POLLEN_SERVERS) {
+      serverStatusMap.set(server.url, {
+        lastSuccess: 0,
+        failCount: 0,
+        isHealthy: true
+      })
+    }
+    console.info('[PollenService] 所有服务器状态已重置')
+  }
+}
+// 文件: entry/src/main/ets/service/WeatherService.ets
+import { http } from '@kit.NetworkKit'
+const WEATHER_PROXY_BASE = 'http://106.12.143.105:3000'
+export interface WeatherResponse {
+  temperature: number
+  feelsLike: number
+  humidity: number
+  pressure: number
+  windSpeed: number
+  windDirection: string
+  sunrise: string
+  sunset: string
+  description: string
+  tempMax?: number
+  tempMin?: number
+}
+interface QWeatherNow {
+  temp: string
+  feelsLike: string
+  humidity: string
+  pressure: string
+  windSpeed: string
+  windDir: string
+  text: string
+}
+interface QWeatherNowResponse {
+  code?: string
+  now?: QWeatherNow
+  updateTime?: string
+}
+interface QWeatherSunResponse {
+  code?: string
+  sunrise?: string
+  sunset?: string
+}
+interface QWeatherDaily {
+  tempMax: string
+  tempMin: string
+}
+interface QWeatherDailyResponse {
+  code?: string
+  daily?: QWeatherDaily[]
+}
+export class WeatherService {
+  private static instance: WeatherService | null = null
+  private constructor() {
+  }
+  static getInstance(): WeatherService {
+    if (WeatherService.instance === null) {
+      WeatherService.instance = new WeatherService()
+    }
+    return WeatherService.instance
+  }
+  async getWeather(
+    latitude: number,
+    longitude: number
+  ): Promise<WeatherResponse | null> {
+    try {
+      const location = `${longitude.toFixed(2)},${latitude.toFixed(2)}`
+      const today = this.getTodayDate()
+      const weatherUrl = `${WEATHER_PROXY_BASE}/weather/now?location=${location}`
+      const sunUrl = `${WEATHER_PROXY_BASE}/astronomy/sun?location=${location}&date=${today}`
+      const dailyUrl = `${WEATHER_PROXY_BASE}/weather/7d?location=${location}`
+      console.info('[WeatherService] 请求实时天气: ' + weatherUrl)
+      console.info('[WeatherService] 请求天文数据: ' + sunUrl)
+      console.info('[WeatherService] 请求每日预报: ' + dailyUrl)
+      const weatherRes = await this.requestQWeather<QWeatherNowResponse>(weatherUrl)
+      const sunRes = await this.requestQWeather<QWeatherSunResponse>(sunUrl)
+      const dailyRes = await this.requestQWeather<QWeatherDailyResponse>(dailyUrl)
+      if (weatherRes === null || weatherRes.code === undefined || weatherRes.now === undefined) {
+        console.error('[WeatherService] 天气数据无效')
+        return null
+      }
+      if (weatherRes.code !== '200') {
+        console.error('[WeatherService] 和风天气返回错误码: ' + weatherRes.code)
+        return null
+      }
+      let sunrise = '06:00'
+      let sunset = '18:00'
+      if (sunRes !== null && sunRes.code !== undefined && sunRes.sunrise !== undefined) {
+        if (sunRes.code === '200') {
+          sunrise = this.extractTime(sunRes.sunrise)
+          sunset = this.extractTime(sunRes.sunset || '18:00')
+        }
+      }
+      let tempMax: number | undefined = undefined
+      let tempMin: number | undefined = undefined
+      if (dailyRes !== null && dailyRes.code === '200' && dailyRes.daily !== undefined && dailyRes.daily.length > 0) {
+        const todayForecast = dailyRes.daily[0]
+        tempMax = parseFloat(todayForecast.tempMax)
+        tempMin = parseFloat(todayForecast.tempMin)
+        console.info(`[WeatherService] 今日温度: 最高${tempMax}°C, 最低${tempMin}°C`)
+      }
+      const result: WeatherResponse = {
+        temperature: parseFloat(weatherRes.now.temp),
+        feelsLike: parseFloat(weatherRes.now.feelsLike),
+        humidity: parseFloat(weatherRes.now.humidity),
+        pressure: parseFloat(weatherRes.now.pressure),
+        windSpeed: parseFloat(weatherRes.now.windSpeed),
+        windDirection: weatherRes.now.windDir,
+        sunrise: sunrise,
+        sunset: sunset,
+        description: weatherRes.now.text,
+        tempMax: tempMax,
+        tempMin: tempMin
+      }
+      console.info('[WeatherService] 天气数据获取成功: ' + result.description)
+      return result
+    } catch (error) {
+      console.error('[WeatherService] 天气获取异常: ' + JSON.stringify(error))
+      return null
+    }
+  }
+  private async requestQWeather<T>(url: string): Promise<T | null> {
+    const httpRequest = http.createHttp()
+    try {
+      const response = await httpRequest.request(url, {
+        method: http.RequestMethod.GET,
+        header: {
+          'Content-Type': 'application/json'
+        },
+        connectTimeout: 10000,
+        readTimeout: 10000
+      })
+      httpRequest.destroy()
+      if (response.responseCode === 200) {
+        const resultStr = response.result as string
+        return JSON.parse(resultStr) as T
+      } else {
+        console.error('[WeatherService] HTTP 请求失败: ' + response.responseCode)
+        return null
+      }
+    } catch (error) {
+      httpRequest.destroy()
+      console.error('[WeatherService] 请求异常: ' + JSON.stringify(error))
+      return null
+    }
+  }
+  private getTodayDate(): string {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}${month}${day}`
+  }
+  private extractTime(isoTime: string): string {
+    try {
+      const match = isoTime.match(/T(\d{2}:\d{2})/)
+      if (match !== null && match[1] !== undefined) {
+        return match[1]
+      }
+      return isoTime
+    } catch (error) {
+      console.error('[WeatherService] 时间解析失败: ' + isoTime)
+      return '00:00'
+    }
+  }
+}
+// 文件: entry/src/main/ets/service/LocationService.ets
+import { geoLocationManager } from '@kit.LocationKit'
+import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit'
+export interface LocationInfo {
+  latitude: number
+  longitude: number
+  city: string
+  address: string
+}
+export type LocationChangeCallback = (location: LocationInfo) => void
+export class LocationService {
+  private static instance: LocationService | null = null
+  private context: common.UIAbilityContext | null = null
+  private cachedLocation: LocationInfo | null = null
+  private cacheTimestamp: number = 0
+  private readonly CACHE_VALID_MS: number = 5 * 60 * 1000
+  private isListening: boolean = false
+  private locationCallbacks: LocationChangeCallback[] = []
+  private constructor() {
+  }
+  static getInstance(): LocationService {
+    if (LocationService.instance === null) {
+      LocationService.instance = new LocationService()
+    }
+    return LocationService.instance
+  }
+  setContext(context: common.UIAbilityContext): void {
+    this.context = context
+  }
+  async checkAndRequestPermission(): Promise<boolean> {
+    if (this.context === null) {
+      console.error('[LocationService] Context not set')
+      return false
+    }
+    const permissions: Permissions[] = [
+      'ohos.permission.LOCATION',
+      'ohos.permission.APPROXIMATELY_LOCATION'
+    ]
+    try {
+      const atManager = abilityAccessCtrl.createAtManager()
+      const checkResult = await atManager.checkAccessToken(
+        this.context.applicationInfo.accessTokenId,
+        permissions[0]
+      )
+      if (checkResult === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
+        console.info('[LocationService] 已有位置权限')
+        this.startLocationListener()
+        return true
+      }
+      console.info('[LocationService] 请求位置权限...')
+      const requestResult = await atManager.requestPermissionsFromUser(this.context, permissions)
+      const granted = requestResult.authResults.every(result =>
+        result === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
+      )
+      console.info('[LocationService] 权限请求结果: ' + granted)
+      if (granted) {
+        this.startLocationListener()
+      }
+      return granted
+    } catch (error) {
+      console.error('[LocationService] 权限检查失败: ' + JSON.stringify(error))
+      return false
+    }
+  }
+  async getQuickLocation(): Promise<LocationInfo | null> {
+    const startTime = Date.now()
+    if (this.isCacheValid()) {
+      console.info(`[LocationService] ⚡ 使用缓存位置 (${Date.now() - startTime}ms)`)
+      this.updateLocationInBackground()
+      return this.cachedLocation
+    }
+    const lastLocation = await this.getLastKnownLocation()
+    if (lastLocation) {
+      const locationInfo = await this.buildLocationInfoQuick(lastLocation)
+      this.updateCache(locationInfo)
+      console.info(`[LocationService] ⚡ 使用最后位置 (${Date.now() - startTime}ms)`)
+      this.updateLocationInBackground()
+      return locationInfo
+    }
+    console.info('[LocationService] 快速定位...')
+    const quickLocation = await this.tryGetLocation('QUICK', {
+      priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
+      scenario: geoLocationManager.LocationRequestScenario.UNSET,
+      maxAccuracy: 1000,
+      timeoutMs: 2000
+    })
+    if (quickLocation) {
+      const locationInfo = await this.buildLocationInfoQuick(quickLocation)
+      this.updateCache(locationInfo)
+      console.info(`[LocationService] ⚡ 快速定位成功 (${Date.now() - startTime}ms)`)
+      this.updateLocationInBackground()
+      return locationInfo
+    }
+    console.warn(`[LocationService] 快速定位失败，返回默认位置 (${Date.now() - startTime}ms)`)
+    return this.getDefaultLocation()
+  }
+  async getCurrentLocation(): Promise<LocationInfo | null> {
+    const startTime = Date.now()
+    try {
+      const isEnabled = geoLocationManager.isLocationEnabled()
+      if (!isEnabled) {
+        console.error('[LocationService] 位置服务未启用')
+        return this.cachedLocation || this.getDefaultLocation()
+      }
+      console.info('[LocationService] 尝试快速定位...')
+      const quickLocation = await this.tryGetLocation('QUICK', {
+        priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
+        scenario: geoLocationManager.LocationRequestScenario.UNSET,
+        maxAccuracy: 500,
+        timeoutMs: 2000
+      })
+      if (quickLocation) {
+        const locationInfo = await this.buildLocationInfo(quickLocation)
+        this.updateCache(locationInfo)
+        console.info(`[LocationService] ✅ 快速定位成功 (${Date.now() - startTime}ms)`)
+        this.getGpsLocationInBackground()
+        return locationInfo
+      }
+      console.info('[LocationService] 尝试 GPS 定位...')
+      const gpsLocation = await this.tryGetLocation('GPS', {
+        priority: geoLocationManager.LocationRequestPriority.ACCURACY,
+        scenario: geoLocationManager.LocationRequestScenario.UNSET,
+        maxAccuracy: 100,
+        timeoutMs: 3000
+      })
+      if (gpsLocation) {
+        const locationInfo = await this.buildLocationInfo(gpsLocation)
+        this.updateCache(locationInfo)
+        console.info(`[LocationService] ✅ GPS 定位成功 (${Date.now() - startTime}ms)`)
+        return locationInfo
+      }
+      const lastLocation = await this.getLastKnownLocation()
+      if (lastLocation) {
+        const locationInfo = await this.buildLocationInfo(lastLocation)
+        this.updateCache(locationInfo)
+        console.info(`[LocationService] ✅ 使用最后位置 (${Date.now() - startTime}ms)`)
+        return locationInfo
+      }
+      if (this.cachedLocation) {
+        console.info(`[LocationService] ✅ 使用缓存位置 (${Date.now() - startTime}ms)`)
+        return this.cachedLocation
+      }
+      console.error(`[LocationService] ❌ 所有定位策略均失败 (${Date.now() - startTime}ms)`)
+      return this.getDefaultLocation()
+    } catch (error) {
+      console.error('[LocationService] 获取位置失败: ' + JSON.stringify(error))
+      return this.cachedLocation || this.getDefaultLocation()
+    }
+  }
+  private updateLocationInBackground(): void {
+    setTimeout(async () => {
+      try {
+        const location = await this.tryGetLocation('BG_GPS', {
+          priority: geoLocationManager.LocationRequestPriority.ACCURACY,
+          scenario: geoLocationManager.LocationRequestScenario.UNSET,
+          maxAccuracy: 100,
+          timeoutMs: 5000
+        })
+        if (location) {
+          const locationInfo = await this.buildLocationInfo(location)
+          this.updateCache(locationInfo)
+          this.notifyLocationChange(locationInfo)
+          console.info('[LocationService] 🔄 后台位置已更新')
+        }
+      } catch (e) {
+        console.warn('[LocationService] 后台更新位置失败')
+      }
+    }, 100)
+  }
+  private getGpsLocationInBackground(): void {
+    setTimeout(async () => {
+      try {
+        const location = await this.tryGetLocation('BG_GPS', {
+          priority: geoLocationManager.LocationRequestPriority.ACCURACY,
+          scenario: geoLocationManager.LocationRequestScenario.UNSET,
+          maxAccuracy: 50,
+          timeoutMs: 8000
+        })
+        if (location) {
+          const locationInfo = await this.buildLocationInfo(location)
+          if (this.cachedLocation) {
+            const distance = this.calculateDistance(
+              this.cachedLocation.latitude, this.cachedLocation.longitude,
+              locationInfo.latitude, locationInfo.longitude
+            )
+            if (distance > 50) {
+              this.updateCache(locationInfo)
+              this.notifyLocationChange(locationInfo)
+              console.info(`[LocationService] 🎯 GPS 精确位置已更新（偏差 ${distance.toFixed(0)}m）`)
+            }
+          } else {
+            this.updateCache(locationInfo)
+            this.notifyLocationChange(locationInfo)
+          }
+        }
+      } catch (e) {
+        console.warn('[LocationService] 后台 GPS 定位失败')
+      }
+    }, 100)
+  }
+  startLocationListener(): void {
+    if (this.isListening) {
+      return
+    }
+    try {
+      const locationRequest: geoLocationManager.LocationRequest = {
+        priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
+        scenario: geoLocationManager.LocationRequestScenario.UNSET,
+        timeInterval: 60,
+        distanceInterval: 100,
+        maxAccuracy: 200
+      }
+      geoLocationManager.on('locationChange', locationRequest, async (location) => {
+        console.info(`[LocationService] 📍 位置变化: ${location.latitude}, ${location.longitude}`)
+        const locationInfo = await this.buildLocationInfoQuick(location)
+        this.updateCache(locationInfo)
+        this.notifyLocationChange(locationInfo)
+      })
+      this.isListening = true
+      console.info('[LocationService] ✅ 位置监听已启动')
+    } catch (e) {
+      console.warn('[LocationService] 启动位置监听失败: ' + JSON.stringify(e))
+    }
+  }
+  stopLocationListener(): void {
+    if (!this.isListening) {
+      return
+    }
+    try {
+      geoLocationManager.off('locationChange')
+      this.isListening = false
+      console.info('[LocationService] 位置监听已停止')
+    } catch (e) {
+      console.warn('[LocationService] 停止位置监听失败')
+    }
+  }
+  onLocationChange(callback: LocationChangeCallback): void {
+    this.locationCallbacks.push(callback)
+  }
+  offLocationChange(callback: LocationChangeCallback): void {
+    const index = this.locationCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.locationCallbacks.splice(index, 1)
+    }
+  }
+  private notifyLocationChange(location: LocationInfo): void {
+    for (let i = 0; i < this.locationCallbacks.length; i++) {
+      try {
+        this.locationCallbacks[i](location)
+      } catch (e) {
+        console.warn('[LocationService] 回调执行失败')
+      }
+    }
+  }
+  private isCacheValid(): boolean {
+    if (!this.cachedLocation) {
+      return false
+    }
+    return Date.now() - this.cacheTimestamp < this.CACHE_VALID_MS
+  }
+  private updateCache(location: LocationInfo): void {
+    this.cachedLocation = location
+    this.cacheTimestamp = Date.now()
+  }
+  private async tryGetLocation(
+    type: string,
+    request: geoLocationManager.CurrentLocationRequest
+  ): Promise<geoLocationManager.Location | null> {
+    try {
+      const location = await geoLocationManager.getCurrentLocation(request)
+      console.info(`[LocationService] ${type} 定位: ${location.latitude}, ${location.longitude}`)
+      return location
+    } catch (error) {
+      console.warn(`[LocationService] ${type} 定位失败: ${JSON.stringify(error)}`)
+      return null
+    }
+  }
+  private async getLastKnownLocation(): Promise<geoLocationManager.Location | null> {
+    try {
+      const location = await geoLocationManager.getLastLocation()
+      if (location) {
+        console.info(`[LocationService] 最后位置: ${location.latitude}, ${location.longitude}`)
+        return location
+      }
+      return null
+    } catch (error) {
+      console.warn('[LocationService] 获取最后位置失败: ' + JSON.stringify(error))
+      return null
+    }
+  }
+  private async buildLocationInfoQuick(location: geoLocationManager.Location): Promise<LocationInfo> {
+    const locationInfo: LocationInfo = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      city: '当前位置',
+      address: ''
+    }
+    this.getAddressAsync(location.latitude, location.longitude).then((address) => {
+      if (address && this.cachedLocation) {
+        this.cachedLocation.city = address.city
+        this.cachedLocation.address = address.address
+        this.notifyLocationChange(this.cachedLocation)
+      }
+    })
+    return locationInfo
+  }
+  private async buildLocationInfo(location: geoLocationManager.Location): Promise<LocationInfo> {
+    const locationInfo: LocationInfo = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      city: '',
+      address: ''
+    }
+    try {
+      const addressPromise = this.getAddressAsync(location.latitude, location.longitude)
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
+      const address = await Promise.race([addressPromise, timeoutPromise])
+      if (address) {
+        locationInfo.city = address.city
+        locationInfo.address = address.address
+      } else {
+        locationInfo.city = '当前位置'
+      }
+    } catch (geoError) {
+      console.warn('[LocationService] 逆地理编码失败: ' + JSON.stringify(geoError))
+      locationInfo.city = '当前位置'
+    }
+    return locationInfo
+  }
+  private async getAddressAsync(latitude: number, longitude: number): Promise<{ city: string, address: string } | null> {
+    try {
+      const reverseRequest: geoLocationManager.ReverseGeoCodeRequest = {
+        latitude: latitude,
+        longitude: longitude,
+        maxItems: 1
+      }
+      const addresses = await geoLocationManager.getAddressesFromLocation(reverseRequest)
+      if (addresses.length > 0) {
+        const addr = addresses[0]
+        const city = (addr.administrativeArea || '') + ', ' + (addr.locality || '')
+        const address = addr.placeName || ''
+        console.info('[LocationService] 城市: ' + city)
+        return { city, address }
+      }
+    } catch (e) {
+      console.warn('[LocationService] 获取地址失败')
+    }
+    return null
+  }
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+  getCachedLocation(): LocationInfo | null {
+    return this.cachedLocation
+  }
+  getDefaultLocation(): LocationInfo {
+    return {
+      latitude: 23.1291,
+      longitude: 113.2644,
+      city: '广东省, 广州市',
+      address: '广州市'
+    }
+  }
+}
+// 文件: entry/src/main/ets/utils/NotificationService.ets
+import { notificationManager } from '@kit.NotificationKit'
+import { hilog } from '@kit.PerformanceAnalysisKit'
+import { wantAgent, common } from '@kit.AbilityKit'
+import { ReminderService } from './ReminderService'
+const DOMAIN = 0x0001;
+const TAG = 'NotificationService';
+export class NotificationService {
+  private static instance: NotificationService;
+  private slotInitialized: boolean = false;
+  private context?: common.UIAbilityContext;
+  private constructor() {}
+  setContext(context: common.UIAbilityContext): void {
+    this.context = context;
+  }
+  static getInstance(): NotificationService {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService();
+    }
+    return NotificationService.instance;
+  }
+  private async initNotificationSlot(): Promise<void> {
+    if (this.slotInitialized) {
+      return;
+    }
+    try {
+      await notificationManager.addSlot(notificationManager.SlotType.SOCIAL_COMMUNICATION);
+      this.slotInitialized = true;
+      hilog.info(DOMAIN, TAG, '通知渠道初始化成功');
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `初始化通知渠道失败: ${JSON.stringify(err)}`);
+    }
+  }
+  async checkNotificationEnabled(): Promise<boolean> {
+    try {
+      const enabled = await notificationManager.isNotificationEnabled();
+      hilog.info(DOMAIN, TAG, `通知权限状态: ${enabled}`);
+      return enabled;
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `检查通知权限失败: ${JSON.stringify(err)}`);
+      return false;
+    }
+  }
+  async requestNotificationPermission(): Promise<void> {
+    try {
+      await notificationManager.requestEnableNotification();
+      hilog.info(DOMAIN, TAG, '通知权限请求已发送');
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `请求通知权限失败: ${JSON.stringify(err)}`);
+    }
+  }
+  async sendPollenAlert(level: string, value: number, city: string): Promise<void> {
+    try {
+      hilog.info(DOMAIN, TAG, `[DEBUG] 进入 sendPollenAlert: level=${level}, value=${value}, city=${city}`);
+      const notificationEnabled = AppStorage.get<boolean>('notificationEnabled') ?? false;
+      if (!notificationEnabled) {
+        hilog.info(DOMAIN, TAG, '通知总开关已关闭，跳过推送');
+        return;
+      }
+      const pollenAlertEnabled = AppStorage.get<boolean>('pollenAlertEnabled') ?? false;
+      if (!pollenAlertEnabled) {
+        hilog.info(DOMAIN, TAG, '花粉预警开关已关闭，跳过推送');
+        return;
+      }
+      const hasPermission = await this.checkNotificationEnabled();
+      if (!hasPermission) {
+        hilog.warn(DOMAIN, TAG, '无通知权限，无法发送通知');
+        return;
+      }
+      await this.initNotificationSlot();
+      const wantAgentObj = await this.createWantAgent();
+      const request: notificationManager.NotificationRequest = {
+        id: Math.floor(Math.random() * 1000),
+        notificationSlotType: notificationManager.SlotType.SOCIAL_COMMUNICATION,
+        content: {
+          notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT,
+          normal: {
+            title: `${city} 花粉预警`,
+            text: `花粉等级：${level}（${value} 粒/km³）\n建议减少户外活动，外出佩戴口罩`,
+            additionalText: '点击查看详情'
+          }
+        },
+        deliveryTime: new Date().getTime(),
+        wantAgent: wantAgentObj
+      };
+      await notificationManager.publish(request);
+      hilog.info(DOMAIN, TAG, `花粉预警通知已发送: ${city} - ${level}`);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `发送花粉预警通知失败: ${JSON.stringify(err)}`);
+    }
+  }
+  async sendDailyReport(level: string, value: number, city: string, tips: string[]): Promise<void> {
+    try {
+      const notificationEnabled = AppStorage.get<boolean>('notificationEnabled') ?? false;
+      if (!notificationEnabled) {
+        hilog.info(DOMAIN, TAG, '通知总开关已关闭，跳过推送');
+        return;
+      }
+      const dailyReportEnabled = AppStorage.get<boolean>('dailyReportEnabled') ?? false;
+      if (!dailyReportEnabled) {
+        hilog.info(DOMAIN, TAG, '每日播报开关已关闭，跳过推送');
+        return;
+      }
+      const hasPermission = await this.checkNotificationEnabled();
+      if (!hasPermission) {
+        hilog.warn(DOMAIN, TAG, '无通知权限，无法发送通知');
+        return;
+      }
+      const wantAgentObj = await this.createWantAgent();
+      const tipsText = tips.length > 0 ? `\n${tips[0]}` : '';
+      const request: notificationManager.NotificationRequest = {
+        id: 2,
+        content: {
+          notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT,
+          normal: {
+            title: `${city} 今日花粉播报`,
+            text: `花粉等级：${level}（${value} 粒/km³）${tipsText}`,
+            additionalText: '点击查看详情'
+          }
+        },
+        isOngoing: false,
+        isUnremovable: false,
+        deliveryTime: new Date().getTime(),
+        tapDismissed: true,
+        autoDeletedTime: 7200000,
+        wantAgent: wantAgentObj
+      };
+      await notificationManager.publish(request);
+      hilog.info(DOMAIN, TAG, `每日播报通知已发送: ${city} - ${level}`);
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `发送每日播报通知失败: ${JSON.stringify(err)}`);
+    }
+  }
+  private async createWantAgent(): Promise<object | undefined> {
+    try {
+      const wantAgentInfo: wantAgent.WantAgentInfo = {
+        wants: [
+          {
+            bundleName: 'com.eric.PollenForecast',
+            abilityName: 'EntryAbility',
+            parameters: {
+              router: 'pages/Index',
+              tab: 0
+            }
+          }
+        ],
+        requestCode: 0,
+        actionType: wantAgent.OperationType.START_ABILITY,
+        actionFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+      };
+      const wantAgentObj = await wantAgent.getWantAgent(wantAgentInfo);
+      hilog.info(DOMAIN, TAG, 'WantAgent创建成功');
+      return wantAgentObj;
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `WantAgent创建失败: ${JSON.stringify(err)}`);
+      return undefined;
+    }
+  }
+  async cancelAllNotifications(): Promise<void> {
+    try {
+      await notificationManager.cancelAll();
+      hilog.info(DOMAIN, TAG, '已取消所有通知');
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, `取消通知失败: ${JSON.stringify(err)}`);
+    }
+  }
+  async scheduleDailyReminder(timeStr: string): Promise<boolean> {
+    try {
+      hilog.info(DOMAIN, TAG, `设置每日播报定时提醒: ${timeStr}`);
+      AppStorage.setOrCreate('dailyReminderTime', timeStr);
+      AppStorage.setOrCreate('dailyReportEnabled', true);
+      const reminderService = ReminderService.getInstance();
+      const success = await reminderService.scheduleDailyReminder(timeStr);
+      if (success) {
+        hilog.info(DOMAIN, TAG, `✅ 每日播报定时提醒设置成功: ${timeStr}`);
+      } else {
+        hilog.warn(DOMAIN, TAG, `⚠️ 代理提醒设置失败，将使用应用启动时检查方案`);
+      }
+      return true;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : JSON.stringify(err);
+      hilog.error(DOMAIN, TAG, `设置定时提醒失败: ${errorMsg}`);
+      return false;
+    }
+  }
+  async cancelDailyReminder(): Promise<void> {
+    try {
+      AppStorage.delete('dailyReminderTime');
+      AppStorage.setOrCreate('dailyReportEnabled', false);
+      const reminderService = ReminderService.getInstance();
+      await reminderService.cancelReminder();
+      hilog.info(DOMAIN, TAG, '已取消每日播报');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : JSON.stringify(err);
+      hilog.error(DOMAIN, TAG, `取消定时提醒失败: ${errorMsg}`);
+    }
+  }
+  async checkAndSendDailyReport(): Promise<void> {
+    try {
+      const notificationEnabled = AppStorage.get<boolean>('notificationEnabled') ?? false;
+      if (!notificationEnabled) {
+        hilog.info(DOMAIN, TAG, '通知总开关已关闭，跳过每日播报检查');
+        return;
+      }
+      const dailyReportEnabled = AppStorage.get<boolean>('dailyReportEnabled') ?? false;
+      if (!dailyReportEnabled) {
+        hilog.info(DOMAIN, TAG, '每日播报已关闭，跳过检查');
+        return;
+      }
+      const timeStr = AppStorage.get<string>('dailyReminderTime') ?? '08:00';
+      const timeParts: string[] = timeStr.split(':');
+      const hour = parseInt(timeParts[0]);
+      const minute = parseInt(timeParts[1]);
+      const lastSentDate = AppStorage.get<string>('lastDailyReportDate') ?? '';
+      const today = new Date().toDateString();
+      if (lastSentDate === today) {
+        hilog.info(DOMAIN, TAG, '今日播报已发送，跳过');
+        return;
+      }
+      const now = new Date();
+      const targetTime = new Date();
+      targetTime.setHours(hour, minute, 0, 0);
+      if (now.getTime() >= targetTime.getTime()) {
+        hilog.info(DOMAIN, TAG, '触发每日播报通知（应用启动时检查）');
+        const city = AppStorage.get<string>('currentCity') ?? '未知';
+        const level = AppStorage.get<string>('pollenLevel') ?? '未知';
+        const value = AppStorage.get<number>('pollenValue') ?? 0;
+        await this.sendDailyReport(level, value, city, []);
+        AppStorage.setOrCreate('lastDailyReportDate', today);
+        hilog.info(DOMAIN, TAG, `✅ 每日播报已发送: ${city} - ${level}`);
+      } else {
+        hilog.info(DOMAIN, TAG, `当前时间未到设定时间 ${timeStr}，跳过播报`);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : JSON.stringify(err);
+      hilog.error(DOMAIN, TAG, `每日播报检查失败: ${errorMsg}`);
+    }
+  }
+  async checkReminderPermission(): Promise<boolean> {
+    return true;
+  }
+}
+// 文件: entry/src/main/ets/utils/ReminderService.ets
+import { reminderAgentManager } from '@kit.BackgroundTasksKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { notificationManager } from '@kit.NotificationKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+const DOMAIN = 0x0001;
+const TAG = 'ReminderService';
+const REMINDER_ID_KEY = 'dailyReminderAgentId';
+interface ReminderRequestWithId {
+  reminderId?: number;
+}
+export class ReminderService {
+  private static instance: ReminderService;
+  private reminderId: number = -1;
+  private constructor() {
+    const savedId = AppStorage.get<number>(REMINDER_ID_KEY);
+    if (savedId !== undefined && savedId !== -1) {
+      this.reminderId = savedId;
+      hilog.info(DOMAIN, TAG, `恢复已保存的提醒ID: ${this.reminderId}`);
+    }
+  }
+  static getInstance(): ReminderService {
+    if (!ReminderService.instance) {
+      ReminderService.instance = new ReminderService();
+    }
+    return ReminderService.instance;
+  }
+  async cancelAllReminders(): Promise<void> {
+    try {
+      const reminders = await reminderAgentManager.getValidReminders();
+      hilog.info(DOMAIN, TAG, `当前有效提醒数量: ${reminders.length}`);
+      for (let i = 0; i < reminders.length; i++) {
+        const reminder = reminders[i];
+        const reminderStr = JSON.stringify(reminder);
+        const reminderObj: ReminderRequestWithId = JSON.parse(reminderStr) as ReminderRequestWithId;
+        const id = reminderObj.reminderId;
+        if (id !== undefined) {
+          try {
+            await reminderAgentManager.cancelReminder(id);
+            hilog.info(DOMAIN, TAG, `已取消提醒 ID: ${id}`);
+          } catch (cancelErr) {
+            const cancelError = cancelErr as BusinessError;
+            hilog.warn(DOMAIN, TAG, `取消提醒 ${id} 失败: ${cancelError.message}`);
+          }
+        }
+      }
+      this.reminderId = -1;
+      AppStorage.delete(REMINDER_ID_KEY);
+      hilog.info(DOMAIN, TAG, `✅ 已清理所有旧提醒，共 ${reminders.length} 个`);
+    } catch (err) {
+      const error = err as BusinessError;
+      hilog.error(DOMAIN, TAG, `清理旧提醒失败: ${error.code} - ${error.message}`);
+    }
+  }
+  async scheduleDailyReminder(timeStr: string): Promise<boolean> {
+    try {
+      hilog.info(DOMAIN, TAG, `设置每日提醒: ${timeStr}`);
+      const timeParts: string[] = timeStr.split(':');
+      const hour = parseInt(timeParts[0]);
+      const minute = parseInt(timeParts[1]);
+      if (isNaN(hour) || isNaN(minute)) {
+        hilog.error(DOMAIN, TAG, `无效的时间格式: ${timeStr}`);
+        return false;
+      }
+      await this.cancelAllReminders();
+      const reminderRequest: reminderAgentManager.ReminderRequestAlarm = {
+        reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_ALARM,
+        hour: hour,
+        minute: minute,
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        title: '🌼 花粉浓度播报',
+        content: '今日花粉浓度信息已更新，点击查看详情',
+        expiredContent: '花粉播报已过期',
+        snoozeContent: '稀后提醒',
+        notificationId: 1001,
+        slotType: notificationManager.SlotType.SOCIAL_COMMUNICATION,
+        ringDuration: 10,
+        snoozeTimes: 2,
+        timeInterval: 5 * 60,
+        actionButton: [
+          {
+            title: '稀后提醒',
+            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_SNOOZE
+          },
+          {
+            title: '关闭',
+            type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE
+          }
+        ],
+        wantAgent: {
+          pkgName: 'com.eric.PollenForecast',
+          abilityName: 'EntryAbility'
+        }
+      };
+      hilog.info(DOMAIN, TAG, `提醒配置: hour=${hour}, minute=${minute}`);
+      this.reminderId = await reminderAgentManager.publishReminder(reminderRequest);
+      AppStorage.setOrCreate(REMINDER_ID_KEY, this.reminderId);
+      hilog.info(DOMAIN, TAG, `✅ 每日提醒设置成功，ID: ${this.reminderId}`);
+      return true;
+    } catch (err) {
+      const error = err as BusinessError;
+      hilog.error(DOMAIN, TAG, `设置提醒失败: ${error.code} - ${error.message}`);
+      return false;
+    }
+  }
+  async cancelReminder(): Promise<void> {
+    try {
+      if (this.reminderId !== -1) {
+        await reminderAgentManager.cancelReminder(this.reminderId);
+        hilog.info(DOMAIN, TAG, `已取消提醒，ID: ${this.reminderId}`);
+        this.reminderId = -1;
+        AppStorage.delete(REMINDER_ID_KEY);
+      }
+    } catch (err) {
+      const error = err as BusinessError;
+      hilog.error(DOMAIN, TAG, `取消提醒失败: ${error.code} - ${error.message}`);
+    }
+  }
+  async getValidReminders(): Promise<reminderAgentManager.ReminderRequest[]> {
+    try {
+      const reminders = await reminderAgentManager.getValidReminders();
+      hilog.info(DOMAIN, TAG, `当前有效提醒数量: ${reminders.length}`);
+      return reminders;
+    } catch (err) {
+      const error = err as BusinessError;
+      hilog.error(DOMAIN, TAG, `获取提醒失败: ${error.code} - ${error.message}`);
+      return [];
+    }
+  }
+}
+// 文件: entry/src/main/ets/widget/PollenCard.ets
+let storage = new LocalStorage();
+@Entry(storage)
+@Component
+export struct PollenCard {
+  @LocalStorageProp('pollenValue') pollenValue: string = '45'
+  @LocalStorageProp('pollenLevel') pollenLevel: string = '中等'
+  @LocalStorageProp('cityName') cityName: string = '广州'
+  build() {
+    Stack() {
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor($r('app.color.card_background'))
+      Row() {
+        Text('📍')
+          .fontSize(14)
+          .fontColor('#666666')
+        Text(this.cityName)
+          .fontSize(14)
+          .fontColor('#666666')
+          .margin({ left: 4 })
+      }
+      .position({ x: 12, y: 12 })
+      Column({
+        space: 2
+      }) {
+        Text(this.pollenValue)
+          .fontSize(50)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#4CAF50')
+          .lineHeight(56)
+        Text('粒/km³')
+          .fontSize(12)
+          .fontColor('#757575')
+      }
+      .alignItems(HorizontalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+      .position({ x: '50%', y: '45%' })
+      .translate({ x: '-50%', y: '-50%' })
+      Text(this.pollenLevel)
+        .fontSize(14)
+        .fontColor('#FF9800')
+        .backgroundColor('#FFF3E0')
+        .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+        .borderRadius(50)
+        .position({ x: '50%', y: '85%' })
+        .translate({ x: '-50%' })
+    }
+    .width('100%')
+    .height('100%')
+    .borderRadius(12)
+    .clip(true)
+    .onClick(() => {
+      postCardAction(this, {
+        action: 'router',
+        abilityName: 'EntryAbility',
+        params: {
+          targetPage: 'index'
+        }
+      });
+    })
+  }
+}
+// 文件: entry/src/main/ets/model/PollenModels.ets (部分)
+export function levelToColor(level: PollenLevel): string {
+  if (level === PollenLevel.NONE) {
+    return '#4CAF50'
+  } else if (level === PollenLevel.VERY_LOW) {
+    return '#8BC34A'
+  } else if (level === PollenLevel.LOW) {
+    return '#CDDC39'
+  } else if (level === PollenLevel.MODERATE) {
+    return '#FFC107'
+  } else if (level === PollenLevel.HIGH) {
+    return '#FF9800'
+  } else if (level === PollenLevel.VERY_HIGH) {
+    return '#F44336'
+  }
+  return '#757575'
+}
+export function formatDateShort(dateInfo: DateInfo): string {
+  const month = dateInfo.month.toString().padStart(2, '0')
+  const day = dateInfo.day.toString().padStart(2, '0')
+  return `${month}/${day}`
+}
+export function getMaxPollenFromDaily(dayInfo: DailyInfo): PollenLevel {
+  let maxLevel = PollenLevel.NONE
+  if (dayInfo.pollenTypeInfo && dayInfo.pollenTypeInfo.length > 0) {
+    for (let i = 0; i < dayInfo.pollenTypeInfo.length; i++) {
+      const typeInfo = dayInfo.pollenTypeInfo[i]
+      if (typeInfo.indexInfo !== null && typeInfo.indexInfo !== undefined) {
+        const category = typeInfo.indexInfo.category || 'None'
+        const level = categoryToLevel(category)
+        if (level > maxLevel) {
+          maxLevel = level
+        }
+      }
+    }
+  }
+  return maxLevel
+}
+export function getMaxPollenIndexFromDaily(dayInfo: DailyInfo): number {
+  let maxIndex = 0
+  if (dayInfo.pollenTypeInfo && dayInfo.pollenTypeInfo.length > 0) {
+    for (let i = 0; i < dayInfo.pollenTypeInfo.length; i++) {
+      const typeInfo = dayInfo.pollenTypeInfo[i]
+      if (typeInfo.indexInfo !== null && typeInfo.indexInfo !== undefined) {
+        const value = typeInfo.indexInfo.value || 0
+        if (value > maxIndex) {
+          maxIndex = value
+        }
+      }
+    }
+  }
+  return maxIndex
+}
+export function getHealthRecommendationsFromDaily(dayInfo: DailyInfo): string[] {
+  const recommendations: Set<string> = new Set()
+  if (dayInfo.pollenTypeInfo && dayInfo.pollenTypeInfo.length > 0) {
+    for (const typeInfo of dayInfo.pollenTypeInfo) {
+      if (typeInfo.healthRecommendations && typeInfo.healthRecommendations.length > 0) {
+        for (const rec of typeInfo.healthRecommendations) {
+          if (rec && rec.trim().length > 0) {
+            recommendations.add(rec)
+          }
+        }
+      }
+    }
+  }
+  return Array.from(recommendations)
+}
+// 文件: entry/src/main/ets/utils/VibrationUtils.ets
+import { vibrator } from '@kit.SensorServiceKit'
+export class VibrationUtils {
+  static triggerLight(): void {
+    const vibrationEnabled = AppStorage.get<boolean>('vibrationEnabled') ?? false
+    if (!vibrationEnabled) {
+      return
+    }
+    try {
+      vibrator.startVibration({
+        type: 'time',
+        duration: 15
+      }, {
+        id: 0,
+        usage: 'touch'
+      }, (error) => {
+        if (error) {
+          console.error('[VibrationUtils] 轻量震动失败:', JSON.stringify(error))
+        }
+      })
+    } catch (err) {
+      console.error('[VibrationUtils] 轻量震动异常:', JSON.stringify(err))
+    }
+  }
+  static triggerMedium(): void {
+    const vibrationEnabled = AppStorage.get<boolean>('vibrationEnabled') ?? false
+    if (!vibrationEnabled) {
+      return
+    }
+    try {
+      vibrator.startVibration({
+        type: 'time',
+        duration: 35
+      }, {
+        id: 0,
+        usage: 'touch'
+      }, (error) => {
+        if (error) {
+          console.error('[VibrationUtils] 中等震动失败:', JSON.stringify(error))
+        }
+      })
+    } catch (err) {
+      console.error('[VibrationUtils] 中等震动异常:', JSON.stringify(err))
+    }
+  }
+  static triggerHeavy(): void {
+    const vibrationEnabled = AppStorage.get<boolean>('vibrationEnabled') ?? false
+    if (!vibrationEnabled) {
+      return
+    }
+    try {
+      vibrator.startVibration({
+        type: 'time',
+        duration: 50
+      }, {
+        id: 0,
+        usage: 'alarm'
+      }, (error) => {
+        if (error) {
+          console.error('[VibrationUtils] 重度震动失败:', JSON.stringify(error))
+        }
+      })
+    } catch (err) {
+      console.error('[VibrationUtils] 重度震动异常:', JSON.stringify(err))
+    }
+  }
+}
+// 文件: entry/src/main/ets/utils/SeasonHelper.ets
+export enum SeasonType {
+  SPRING_POLLEN = 'spring_pollen',
+  SUMMER = 'summer',
+  AUTUMN_POLLEN = 'autumn_pollen',
+  WINTER = 'winter'
+}
+export interface OffSeasonContent {
+  title: string
+  description: string
+  tips: string[]
+  nextSeasonHint: string
+}
+export class SeasonHelper {
+  static getCurrentSeason(): SeasonType {
+    const month = new Date().getMonth() + 1
+    if (month >= 3 && month <= 5) {
+      return SeasonType.SPRING_POLLEN
+    } else if (month >= 6 && month <= 7) {
+      return SeasonType.SUMMER
+    } else if (month >= 8 && month <= 10) {
+      return SeasonType.AUTUMN_POLLEN
+    } else {
+      return SeasonType.WINTER
+    }
+  }
+  static isPollenSeason(): boolean {
+    const season = SeasonHelper.getCurrentSeason()
+    return season === SeasonType.SPRING_POLLEN || season === SeasonType.AUTUMN_POLLEN
+  }
+  static getCurrentMonth(): number {
+    return new Date().getMonth() + 1
+  }
+  static getOffSeasonContent(): OffSeasonContent {
+    const season = SeasonHelper.getCurrentSeason()
+    const month = SeasonHelper.getCurrentMonth()
+    if (season === SeasonType.WINTER) {
+      return {
+        title: '冬季花粉休眠期',
+        description: '当前为冬季，大部分地区花粉浓度极低，是过敏患者的舒适期。',
+        tips: [
+          '🌿 可适当进行户外活动，呼吸新鲜空气',
+          '🏠 趁此时期进行家庭大扫除，清除积尘',
+          '💪 加强锻炼，增强体质，为花粉季做准备',
+          '📅 提前关注明年花粉季预报'
+        ],
+        nextSeasonHint: '下一个花粉季预计在3月开始（春季花粉季）'
+      }
+    } else if (season === SeasonType.SUMMER) {
+      return {
+        title: '夏季过渡期',
+        description: '夏季花粉浓度相对较低，但部分地区仍有草本植物花粉。',
+        tips: [
+          '🌾 注意草地花粉，避免在草坪久留',
+          '☀️ 高温天气注意防暑，减少正午外出',
+          '💨 雷雨天气后花粉浓度可能升高',
+          '🔔 8月秋季花粉季即将来临，提前准备'
+        ],
+        nextSeasonHint: '秋季花粉季预计在8月开始（蒿草、豚草高发）'
+      }
+    }
+    return {
+      title: '花粉监测中',
+      description: '正在获取花粉数据...',
+      tips: ['请稍候...'],
+      nextSeasonHint: ''
+    }
+  }
+  static getPollenSeasonTips(): string[] {
+    const season = SeasonHelper.getCurrentSeason()
+    if (season === SeasonType.SPRING_POLLEN) {
+      return [
+        '🌳 春季主要花粉：柏树、杨树、柳树、榆树',
+        '😷 外出佩戴防护口罩和护目镜',
+        '🚿 回家后及时洗脸、洗手、清洗鼻腔',
+        '🪟 花粉高峰期（上午10点-下午4点）关闭门窗',
+        '👕 外出衣物回家后及时更换',
+        '🌬️ 使用空气净化器净化室内空气'
+      ]
+    } else if (season === SeasonType.AUTUMN_POLLEN) {
+      return [
+        '🌿 秋季主要花粉：蒿草、豚草、葎草',
+        '😷 秋季花粉致敏性更强，务必做好防护',
+        '🚗 开车时关闭车窗，使用内循环',
+        '🧺 避免在室外晾晒衣物和床品',
+        '🏥 症状严重时及时就医',
+        '💊 遵医嘱提前使用预防性药物'
+      ]
+    }
+    return []
+  }
+  static getSeasonDescription(): string {
+    const season = SeasonHelper.getCurrentSeason()
+    switch (season) {
+      case SeasonType.SPRING_POLLEN:
+        return '春季花粉季（3-5月）'
+      case SeasonType.SUMMER:
+        return '夏季过渡期（6-7月）'
+      case SeasonType.AUTUMN_POLLEN:
+        return '秋季花粉季（8-10月）'
+      case SeasonType.WINTER:
+        return '冬季休眠期（11-2月）'
+      default:
+        return ''
+    }
+  }
+}
+// 文件: entry/src/main/ets/utils/ApiVersionUtils.ets
+import { deviceInfo } from '@kit.BasicServicesKit';
+let cachedApiVersion: number = -1;
+function getApiVersionInternal(): number {
+  if (cachedApiVersion === -1) {
+    try {
+      cachedApiVersion = deviceInfo.sdkApiVersion;
+      console.info(`[ApiVersionUtils] 当前设备 API 版本: ${cachedApiVersion}`);
+    } catch (err) {
+      console.error('[ApiVersionUtils] 获取 API 版本失败:', JSON.stringify(err));
+      cachedApiVersion = 20;
+    }
+  }
+  return cachedApiVersion;
+}
+export class ApiVersionUtils {
+  static getApiVersion(): number {
+    return getApiVersionInternal();
+  }
+  static isAPI20(): boolean {
+    return getApiVersionInternal() >= 20;
+  }
+  static isAPI17To19(): boolean {
+    const version = getApiVersionInternal();
+    return version >= 17 && version < 20;
+  }
+  static supportsMapEventManager(): boolean {
+    return getApiVersionInternal() >= 20;
+  }
+  static supportsGripDetection(): boolean {
+    return getApiVersionInternal() >= 20;
+  }
+  static getVersionDescription(): string {
+    const version = getApiVersionInternal();
+    if (version >= 20) {
+      return `HarmonyOS 6.0+ (API ${version})`;
+    } else if (version >= 17) {
+      return `HarmonyOS 5.0 (API ${version})`;
+    } else {
+      return `HarmonyOS 旧版本 (API ${version})`;
+    }
+  }
+}
+// 文件: entry/src/main/ets/model/PollenDataSource.ets
+export enum PollenDataSourceType {
+  GOOGLE = 'GOOGLE',
+  CMA = 'CMA',
+  QWEATHER = 'QWEATHER',
+  AUTO = 'AUTO'
+}
+export interface PollenDataSourceConfig {
+  type: PollenDataSourceType
+  name: string
+  description: string
+  coverage: string
+  accuracy: string
+  updateFrequency: string
+  enabled: boolean
+}
+export const POLLEN_DATA_SOURCES: PollenDataSourceConfig[] = [
+  {
+    type: PollenDataSourceType.AUTO,
+    name: '自动选择',
+    description: '根据网络和位置自动选择最佳数据源',
+    coverage: '全球',
+    accuracy: '高',
+    updateFrequency: '实时',
+    enabled: true
+  },
+  {
+    type: PollenDataSourceType.GOOGLE,
+    name: 'Google Pollen API',
+    description: '全球花粉数据，覆盖范围广',
+    coverage: '全球',
+    accuracy: '高',
+    updateFrequency: '每日更新',
+    enabled: true
+  },
+  {
+    type: PollenDataSourceType.CMA,
+    name: '中国气象局',
+    description: '国内权威花粉数据',
+    coverage: '国内',
+    accuracy: '高',
+    updateFrequency: '每日更新',
+    enabled: false
+  },
+  {
+    type: PollenDataSourceType.QWEATHER,
+    name: '和风天气',
+    description: '国内花粉数据（如果支持）',
+    coverage: '国内',
+    accuracy: '中',
+    updateFrequency: '每日更新',
+    enabled: false
+  }
+]
+export function getDataSourceName(type: PollenDataSourceType): string {
+  const source = POLLEN_DATA_SOURCES.find(s => s.type === type)
+  return source?.name || '未知'
+}
+export function getDataSourceDescription(type: PollenDataSourceType): string {
+  const source = POLLEN_DATA_SOURCES.find(s => s.type === type)
+  return source?.description || ''
+}
