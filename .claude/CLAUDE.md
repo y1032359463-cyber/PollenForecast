@@ -1,7 +1,7 @@
 # 花粉浓度播报 (PollenForecast)
 
-> **作用范围**: 本项目专属文档  
-> **最后更新**: 2026-01-08 (文档整理机制建立 + CLAUDE.md 精简)  
+> **作用范围**: 本项目专属文档
+> **最后更新**: 2026-01-08 (文档整理机制建立 + CLAUDE.md 精简)
 > **AI 维护者**: GitHub Copilot / Claude
 
 ---
@@ -48,10 +48,14 @@
    - 创建工单咨询文档（512字版本）
    - 整理 Map Kit API Key 和配置信息
 
-2. **🔧 API 17 兼容性问题分析**
+2. **🔧 API 17 兼容性问题分析与修复**
    - 明确问题：设备镜像版本低于编译SDK版本
-   - 正确方案：保持 targetSdkVersion 为 6.0.0(20)，更新设备镜像版本
+   - 正确方案：保持 targetSdkVersion 为 6.0.0(20)，更新 compatibleSdkVersion 为 5.0.0(12)
    - 避免错误：不应降级SDK版本，而是通过兼容性代码支持低版本设备
+   - 修复 build-profile.json5 配置格式：
+     * targetSdkVersion: "6.0.0(20)"
+     * compatibleSdkVersion: "5.0.0(12)"
+   - 完善 MapView.ets 中的 API 17 兼容处理：使用 controller.on() 替代 MapEventManager
 
 3. **📚 文档更新**
    - 更新 `问题记录.md` 记录API 17兼容性问题
@@ -450,7 +454,7 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 **备份内容**: AppScope、entry/src、配置文件、文档（排除 build/、oh_modules/、figma/、server/）
 
-**GitHub仓库**: `https://github.com/y1032359463-cyber/PollenForecast.git`  
+**GitHub仓库**: `https://github.com/y1032359463-cyber/PollenForecast.git`
 **最新提交**: `6655b3b` - feat: Add user-selectable multi-data-source architecture
 
 ---

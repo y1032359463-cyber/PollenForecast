@@ -127,11 +127,11 @@ export struct MapView {
     const screenHeightPX = display.getDefaultDisplaySync().height
     const screenWidthVP = px2vp(screenWidthPX)
     const screenHeightVP = px2vp(screenHeightPX)
-    
+
     this.buttonX = screenWidthVP - 64  // 右侧：屏幕宽度 - 按钮48 - 边距16
     this.initialButtonY = screenHeightVP * 0.6  // 默认 60% 高度
     this.buttonY = this.initialButtonY
-    
+
     console.info(`[MapView] 按钮初始化位置(vp): (${this.buttonX}, ${this.buttonY})`)
 
     // 启用智感握姿监听
@@ -222,7 +222,7 @@ export struct MapView {
           const screenHeightPX = display.getDefaultDisplaySync().height
           const screenWidthVP = px2vp(screenWidthPX)
           const screenHeightVP = px2vp(screenHeightPX)
-          
+
           // HoldingHandStatus: 0=NONE(无握持), 1=LEFT_HAND, 2/3=RIGHT_HAND
           if (status === 0) {
             // 松开手 → 恢复初始位置
@@ -237,9 +237,9 @@ export struct MapView {
             // 检测到握姿 → 移动到60%高度
             const handType = status === 1 ? 'LEFT' : 'RIGHT'
             console.info(`[MapView] 握手检测: ${handType} (status=${status})`)
-            
+
             this.holdingHand = handType
-            
+
             animateTo({ duration: 150 }, () => {
               this.buttonX = handType === 'LEFT' ? 16 : (screenWidthVP - 64)
               this.buttonY = screenHeightVP * 0.6
@@ -317,7 +317,7 @@ export struct MapView {
         //   : 'common/map_light.json'
         // this.mapController.setMapStylePath(stylePath)
         // console.info(`[MapView] 地图样式已切换为: ${stylePath}`)
-        
+
         // TODO: 创建自定义样式文件后启用上述代码
         console.info('[MapView] 地图深色模式暂未启用（需要自定义样式文件）')
       } catch (err) {
@@ -342,31 +342,48 @@ export struct MapView {
         // API 20+: 使用 MapEventManager
         try {
           this.mapEventManager = controller.getEventManager()
-          
+
           // 添加相机空闲监听（缩放级别变化时触发）
           this.mapEventManager.on('cameraIdle', async () => {
             await this.onCameraChanged()
           })
-          
+
           // 添加标记点击监听（全局只绑定一次）
           this.mapEventManager.on('markerClick', (clickedMarker: map.Marker) => {
             this.handleMarkerClick(clickedMarker)
           })
-          
+
           // 添加定位按钮点击监听（使用自定义按钮，此事件不再使用）
           this.mapEventManager.on('myLocationClick', async () => {
             console.info('[MapView] 系统定位按钮被点击（已禁用，使用自定义按钮）')
           })
-          
+
           console.info('[MapView] ✅ MapEventManager 初始化成功（API 20+）')
         } catch (e) {
           console.warn('[MapView] MapEventManager 初始化失败:', JSON.stringify(e))
         }
       } else {
-        // API 17-19: 事件监听待真机验证
-        // TODO: API 17 真机验证后实现 controller.on() 事件监听
-        console.warn('[MapView] API 17-19 设备，事件监听功能受限（待真机验证）')
-        console.warn('[MapView] 地图标记点击和相机移动事件可能不可用')
+        // API 17-19: 使用 controller.on() 事件监听
+        try {
+          // 添加相机空闲监听（缩放级别变化时触发）
+          controller.on('cameraIdle', async () => {
+            await this.onCameraChanged()
+          })
+
+          // 添加标记点击监听（全局只绑定一次）
+          controller.on('markerClick', (clickedMarker: map.Marker) => {
+            this.handleMarkerClick(clickedMarker)
+          })
+
+          // 添加定位按钮点击监听（使用自定义按钮，此事件不再使用）
+          controller.on('myLocationClick', async () => {
+            console.info('[MapView] 系统定位按钮被点击（已禁用，使用自定义按钮）')
+          })
+
+          console.info('[MapView] ✅ controller.on() 事件监听初始化成功（API 17-19）')
+        } catch (e) {
+          console.warn('[MapView] controller.on() 事件监听初始化失败:', JSON.stringify(e))
+        }
       }
 
       // ========== 禁用系统定位控件（使用自定义按钮）==========
@@ -377,13 +394,13 @@ export struct MapView {
         try {
           // 关闭系统定位功能
           this.mapController.setMyLocationEnabled(false)
-          
+
           // 隐藏系统定位按钮
           this.mapController.setMyLocationControlsEnabled(false)
-          
+
           // 隐藏缩放按钮
           this.mapController.setZoomControlsEnabled(false)
-          
+
           console.info('[MapView] 系统定位控件已禁用，使用自定义按钮')
         } catch (e) {
           console.warn('[MapView] 禁用系统控件失败:', JSON.stringify(e))
@@ -392,7 +409,7 @@ export struct MapView {
 
       // 添加当前位置标记
       this.addCurrentLocationMarker()
-      
+
       // 添加热门城市标记
       this.addHotCityMarkers()
     } else {
@@ -423,7 +440,7 @@ export struct MapView {
 
       // 3. 使用 animateCamera 实现动画移动（1000ms 动画时长）
       await this.mapController.animateCamera(cameraUpdate, 1000)
-      
+
       console.info('[MapView] ✅ 相机移动成功')
 
       // 更新位置标记
@@ -431,7 +448,7 @@ export struct MapView {
     } catch (err) {
       const error = err as Error
       console.error('[MapView] ❌ 移动相机失败 - 错误信息:', error.message || '未知错误')
-      
+
       // 降级方案：仅更新标记点
       await this.updateLocationMarker()
     }
@@ -446,7 +463,7 @@ export struct MapView {
     try {
       const cameraPosition = await this.mapController.getCameraPosition()
       const zoomLevel = cameraPosition.zoom
-      
+
       // 缩放级别 > 14 时隐藏当前位置Marker（避免与蓝色定位点重叠）
       // 缩放级别 <= 14 时显示当前位置Marker（城市级别，需要红色标记点）
       if (this.currentMarker) {
@@ -529,7 +546,7 @@ export struct MapView {
 
         const marker = await this.mapController.addMarker(markerOptions)
         this.cityMarkers.set(cityName, marker)
-        
+
         console.info(`[MapView] 添加城市标记成功: ${cityName}`)
       } catch (err) {
         console.error(`[MapView] 添加城市标记失败: ${cityName}`, JSON.stringify(err))
@@ -694,7 +711,7 @@ export struct MapView {
       } else {
         // 页面不可见时停止监听
         console.info('[MapView] 页面不可见 - 停止握姿监听')
-        
+
         // 停止握姿检测（节省电量）
         this.stopGripDetection()
         this.isAnimating = false
@@ -790,7 +807,7 @@ export struct MapView {
 
     this.isLocating = true
     const startTime = Date.now()
-    
+
     try {
       // 1. 优先使用缓存位置（毫秒级响应）
       const cachedLocation = this.locationService.getCachedLocation()
@@ -803,12 +820,12 @@ export struct MapView {
         }
         // 移动地图
         this.moveCameraToLocation(cachedLocation.latitude, cachedLocation.longitude)
-        
+
         console.info(`[MapView] ⚡ 使用缓存位置 (${Date.now() - startTime}ms)`)
-        
+
         // 后台获取更精确位置
         this.updateLocationInBackground()
-        
+
         promptAction.showToast({
           message: '定位成功',
           duration: 1000
@@ -906,7 +923,7 @@ export struct MapView {
         })
       } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
         animateTo({ duration: 100, curve: Curve.Sharp }, () => {
-          this.buttonX = this.holdingHand === 'LEFT' ? 16 : 
+          this.buttonX = this.holdingHand === 'LEFT' ? 16 :
             (px2vp(display.getDefaultDisplaySync().width) - 64)
         })
       }

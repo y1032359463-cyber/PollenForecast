@@ -12,7 +12,7 @@ export default class EntryAbility extends UIAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     console.info('🟡 [EntryAbility] onCreate 调用');
-    
+
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
@@ -26,7 +26,7 @@ export default class EntryAbility extends UIAbility {
     AppStorage.setOrCreate('updateTime', '获取中...');
     AppStorage.setOrCreate('latitude', 23.1291);
     AppStorage.setOrCreate('longitude', 113.2644);
-    
+
     // 初始化花粉主题色（默认绿色 - 极低等级）
     AppStorage.setOrCreate('pollenThemeColor', '#4CAF50');
 
@@ -66,7 +66,7 @@ export default class EntryAbility extends UIAbility {
     // 在窗口创建阶段请求权限（修正生命周期）
     console.info('🔵 [EntryAbility] 准备请求定位权限');
     this.requestLocationPermissions();
-    
+
     // 请求代理提醒权限（用于定时通知）
     console.info('🔵 [EntryAbility] 准备请求代理提醒权限');
     this.requestReminderPermission();
@@ -94,18 +94,18 @@ export default class EntryAbility extends UIAbility {
       // 获取状态栏高度（TYPE_SYSTEM）
       const topArea = mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
       const statusBarHeight = topArea.topRect.height;
-      
+
       // 获取导航栏高度（TYPE_NAVIGATION_INDICATOR）
       const bottomArea = mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
       const navBarHeight = bottomArea.bottomRect.height;
-      
+
       let density = 3; // 默认屏幕密度
       try {
         density = display.getDefaultDisplaySync().densityPixels;
       } catch (displayErr) {
         hilog.error(DOMAIN, 'testTag', '获取屏幕密度失败: %{public}s', JSON.stringify(displayErr));
       }
-      
+
       const safeTop = statusBarHeight / density;
       const safeBottom = navBarHeight / density;
 
@@ -135,9 +135,9 @@ export default class EntryAbility extends UIAbility {
     try {
       // 优先使用传入的 colorMode，否则从 context 读取
       const currentColorMode = colorMode ?? this.context.config.colorMode;
-      
+
       let systemBarProperties: window.SystemBarProperties;
-      
+
       // 判断当前是深色还是浅色模式
       if (currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
         // 深色模式：完全透明状态栏 + 白色图标
@@ -156,7 +156,7 @@ export default class EntryAbility extends UIAbility {
         };
         hilog.info(DOMAIN, 'testTag', '状态栏设置：浅色模式（透明背景+深色图标）');
       }
-      
+
       mainWindow.setWindowSystemBarProperties(systemBarProperties);
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', '设置状态栏失败: %{public}s', JSON.stringify(err));
@@ -171,7 +171,7 @@ export default class EntryAbility extends UIAbility {
   onForeground(): void {
     // Ability has come to foreground
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
-    
+
     // 通知所有组件应用已回到前台
     AppStorage.setOrCreate('isAppInBackground', false);
     console.info('🟢 [EntryAbility] 应用回到前台，允许传感器恢复');
@@ -198,11 +198,11 @@ export default class EntryAbility extends UIAbility {
    */
   onConfigurationUpdate(newConfig: import('@kit.AbilityKit').Configuration): void {
     hilog.info(DOMAIN, 'testTag', '配置更新 - ColorMode: %{public}d', newConfig.colorMode ?? 0);
-    
+
     // 更新 AppStorage 中的主题状态（让 MapView 响应）
     const newColorMode = newConfig.colorMode ?? ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
     AppStorage.setOrCreate('currentColorMode', newColorMode);
-    
+
     // 主题变化时更新状态栏（传递新的 colorMode）
     if (this.mainWindowInstance) {
       this.updateStatusBarForTheme(this.mainWindowInstance, newColorMode);
@@ -214,7 +214,7 @@ export default class EntryAbility extends UIAbility {
    */
   private async requestLocationPermissions(): Promise<void> {
     console.info('🟢 [EntryAbility] requestLocationPermissions 开始执行');
-    
+
     const permissions: Array<Permissions> = [
       'ohos.permission.LOCATION',
       'ohos.permission.APPROXIMATELY_LOCATION'
@@ -223,13 +223,13 @@ export default class EntryAbility extends UIAbility {
     try {
       console.info('🟢 [EntryAbility] 创建权限管理器');
       const atManager = abilityAccessCtrl.createAtManager();
-      
+
       console.info('🟢 [EntryAbility] 请求权限: ' + JSON.stringify(permissions));
       const grantStatus = await atManager.requestPermissionsFromUser(this.context, permissions);
-      
+
       console.info('🟢 [EntryAbility] 权限请求结果: ' + JSON.stringify(grantStatus));
       console.info('🟢 [EntryAbility] 权限结果数组: ' + JSON.stringify(grantStatus.authResults));
-      
+
       // 检查权限是否被授予
       if (grantStatus.authResults.every(result => result === 0)) {
         console.info('✅ [EntryAbility] 定位权限已授予');
@@ -250,19 +250,19 @@ export default class EntryAbility extends UIAbility {
    */
   private async requestReminderPermission(): Promise<void> {
     console.info('🟢 [EntryAbility] requestReminderPermission 开始执行');
-    
+
     const permissions: Array<Permissions> = [
       'ohos.permission.PUBLISH_AGENT_REMINDER'
     ];
 
     try {
       const atManager = abilityAccessCtrl.createAtManager();
-      
+
       console.info('🔔 [EntryAbility] 请求代理提醒权限');
       const grantStatus = await atManager.requestPermissionsFromUser(this.context, permissions);
-      
+
       console.info('🔔 [EntryAbility] 代理提醒权限结果: ' + JSON.stringify(grantStatus.authResults));
-      
+
       // 检查权限是否被授予
       if (grantStatus.authResults[0] === 0) {
         console.info('✅ [EntryAbility] 代理提醒权限已授予');

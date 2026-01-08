@@ -15,8 +15,16 @@ let cachedApiVersion: number = -1;
 function getApiVersionInternal(): number {
   if (cachedApiVersion === -1) {
     try {
-      cachedApiVersion = deviceInfo.sdkApiVersion;
-      console.info(`[ApiVersionUtils] 当前设备 API 版本: ${cachedApiVersion}`);
+      // 使用 HarmonyOS 独有接口的版本判断方法
+      // 计算方式: M*10000 + S*100 + F → 6*10000 + 0*100 + 0 = 60000
+      if (deviceInfo.distributionOSApiVersion >= 60000) {
+        cachedApiVersion = 20; // API 20 (HarmonyOS 6.0.0)
+      } else if (deviceInfo.distributionOSApiVersion >= 50000) {
+        cachedApiVersion = 17; // API 17 (HarmonyOS 5.0.0)
+      } else {
+        cachedApiVersion = deviceInfo.sdkApiVersion; // 备用方案
+      }
+      console.info(`[ApiVersionUtils] 当前设备 API 版本: ${cachedApiVersion}, distributionOSApiVersion: ${deviceInfo.distributionOSApiVersion}`);
     } catch (err) {
       console.error('[ApiVersionUtils] 获取 API 版本失败:', JSON.stringify(err));
       cachedApiVersion = 20; // 默认假设 API 20
