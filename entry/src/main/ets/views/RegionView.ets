@@ -58,15 +58,15 @@ export struct RegionView {
   @StorageLink('safeBottom') safeBottom: number = 28
   @StorageLink('vibrationEnabled') vibrationEnabled: boolean = false  // 震动反馈开关
   @StorageLink('pollenThemeColor') pollenThemeColor: string = '#4CAF50'  // 花粉主题色
-  
+
   private locationService: LocationService = LocationService.getInstance()
-  
+
   // 收藏的城市列表
   @State favoriteCities: string[] = []
-  
+
   // 热门城市列表
   @State hotCities: string[] = ['北京市', '上海市', '广州市', '深圳市', '杭州市', '成都市', '武汉市', '重庆市']
-  
+
   // 城市列表数据
   @State cityList: CityItem[] = [
     { name: '北京市', distance: 0, isFavorite: false, isTop: false },
@@ -104,12 +104,12 @@ export struct RegionView {
     const R = 6371 // 地球半径(km)
     const dLat = this.deg2rad(lat2 - lat1)
     const dLng = this.deg2rad(lng2 - lng1)
-    
-    const a = 
+
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
       Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return Math.round(R * c) // 四舍五入到整数公里
   }
@@ -136,13 +136,13 @@ export struct RegionView {
     // 创建新数组以触发响应式更新
     this.cityList = this.cityList.map(city => {
       const cityCoords = cityCoordinates[city.name]
-      const distance = cityCoords 
+      const distance = cityCoords
         ? this.calculateDistance(
             gpsCoords.lat, gpsCoords.lng,
             cityCoords.lat, cityCoords.lng
           )
         : 0
-      
+
       const newCity: CityItem = {
         name: city.name,
         distance: distance,
@@ -189,7 +189,7 @@ export struct RegionView {
     }
   }
 
-  // 获取排序后的城市列表（置顶 > 收藏 > 普通）
+  // 获取排序后的城市列表（置顶 > 收藏 > 花粉浓度）
   getSortedCities(): CityItem[] {
     return [...this.cityList].sort((a, b) => {
       // 置顶优先
@@ -198,7 +198,17 @@ export struct RegionView {
       // 收藏次之
       if (a.isFavorite && !b.isFavorite) return -1
       if (!a.isFavorite && b.isFavorite) return 1
-      // 其余按距离排序
+      // 其余按花粉浓度排序（如果有数据）
+      const aPollenLevel = this.getPollenLevelForCity(a.name)
+      const bPollenLevel = this.getPollenLevelForCity(b.name)
+      if (aPollenLevel !== -1 && bPollenLevel !== -1) {
+        return aPollenLevel - bPollenLevel  // 从低到高排序
+      } else if (aPollenLevel !== -1) {
+        return -1  // 有数据的排在前面
+      } else if (bPollenLevel !== -1) {
+        return 1   // 有数据的排在前面
+      }
+      // 如果都没有花粉数据，按距离排序
       return a.distance - b.distance
     })
   }
@@ -206,20 +216,20 @@ export struct RegionView {
   // 重新定位到当前位置（优化：缓存快速响应 + 后台静默更新）
   async refreshCurrentLocation(): Promise<void> {
     if (this.isRefreshingLocation) return
-    
+
     console.info('[RegionView] 快速刷新...')
     this.isRefreshingLocation = true
-    
+
     try {
       // 1. 快速响应：使用缓存位置立即更新距离
       if (this.cachedLocation && this.cachedLocation.city) {
         console.info('[RegionView] 使用缓存位置快速响应')
         this.updateAllDistances()  // 基于缓存计算距离
       }
-      
+
       // 2. 立即结束刷新动画（用户体感快）
       this.isRefreshingLocation = false
-      
+
       // 3. 后台静默更新GPS位置（不阻塞用户操作）
       this.silentRefreshGPS()
     } catch (error) {
@@ -245,23 +255,23 @@ export struct RegionView {
       })
       .then((location: LocationInfo | null) => {
         clearTimeout(timeoutId)
-        
+
         if (location !== null && location.city) {
           // 更新缓存
           this.cachedLocation = location
-          
+
           // 保存GPS定位的真实城市名
           this.actualLocationCity = location.city
-          
+
           // 更新GPS城市坐标
           cityCoordinates[location.city] = {
             lat: location.latitude,
             lng: location.longitude
           }
-          
+
           // 静默更新距离
           this.updateAllDistances()
-          
+
           console.info(`[RegionView] 后台GPS刷新成功: ${location.city}`)
         } else {
           console.warn('[RegionView] 后台GPS定位失败')
@@ -329,7 +339,7 @@ export struct RegionView {
             lng: location.longitude
           }
           console.info(`[RegionView] GPS定位成功: ${location.city} (${location.latitude}, ${location.longitude})`)
-          
+
           // GPS定位成功后，立即计算距离
           this.updateAllDistances()
         }
@@ -366,7 +376,7 @@ export struct RegionView {
           .height(16)
           .fillColor($r('app.color.text_secondary'))
           .margin({ right: 8 })
-        
+
         TextInput({ placeholder: '搜索你感兴趣的城市', text: this.searchText })
           .placeholderColor($r('app.color.text_secondary'))
           .fontColor($r('app.color.text_primary'))
@@ -397,7 +407,7 @@ export struct RegionView {
               .width(16)
               .height(16)
               .fillColor($r('app.color.icon_primary'))
-            
+
             Text(this.actualLocationCity)
               .fontSize(16)
               .fontColor($r('app.color.text_primary'))
@@ -549,11 +559,11 @@ export struct RegionView {
                     const currentOffset = this.swipeOffsets.get(city.name) ?? 0
                     const maxSwipe = city.isFavorite && !city.isTop ? -140 : -80
                     const newOffset = Math.max(maxSwipe, Math.min(0, currentOffset + event.offsetX))
-                    
+
                     // 节流优化：限制更新频率为 60fps (约 16ms)
                     const now = Date.now()
                     this.pendingOffset.set(city.name, newOffset)
-                    
+
                     if (now - this.lastUpdateTime >= 16) {
                       this.lastUpdateTime = now
                       this.swipeOffsets.set(city.name, newOffset)
@@ -566,11 +576,11 @@ export struct RegionView {
                       this.swipeOffsets.set(city.name, finalOffset)
                       this.pendingOffset.delete(city.name)
                     }
-                    
+
                     const velocity = event.velocityX
                     const currentOffset = finalOffset
                     const threshold = city.isFavorite && !city.isTop ? -70 : -40
-                    
+
                     // 判断是否展开
                     if (velocity < -800 || currentOffset < threshold) {
                       animateTo({ duration: 200, curve: Curve.Sharp }, () => {
@@ -598,7 +608,7 @@ export struct RegionView {
             .width('100%')
             .height(50)
             // P1优化: 使用 scale 替代 opacity+translate 复合动画
-            .scale({ 
+            .scale({
               x: this.shouldAnimate(index) ? (this.isAnimating ? 1 : 0.95) : 1,
               y: this.shouldAnimate(index) ? (this.isAnimating ? 1 : 0.95) : 1
             })
@@ -668,7 +678,7 @@ export struct RegionView {
   // 选择城市处理函数
   selectCity(cityName: string): void {
     console.info(`[RegionView] 选择城市: ${cityName}`)
-    
+
     // 1. 震动反馈（30ms 短震）
     if (this.vibrationEnabled) {
       try {
@@ -683,17 +693,17 @@ export struct RegionView {
         console.warn('[RegionView] 震动反馈失败')
       }
     }
-    
+
     // 2. Toast 提示
     this.getUIContext().getPromptAction().showToast({
       message: `已切换到 ${cityName}`,
       duration: 1500
     })
-    
+
     // 3. 更新全局存储的城市信息
     AppStorage.setOrCreate('currentCity', cityName)
     this.currentCity = cityName
-    
+
     // 获取城市坐标（使用全局常量）
     const coords = cityCoordinates[cityName]
     if (coords) {
@@ -711,26 +721,51 @@ export struct RegionView {
     console.info(`[RegionView] 已切换到城市: ${cityName}，跳转首页`)
   }
 
+  // 获取城市花粉浓度等级（模拟方法，实际需要从缓存或API获取）
+  getPollenLevelForCity(cityName: string): number {
+    // 这里需要实际实现获取城市花粉数据的逻辑
+    // 目前是模拟实现，实际应用中需要从缓存或API获取
+    // 返回值：0-5 分别对应 PollenLevel.NONE 到 PollenLevel.VERY_HIGH
+    // 如果没有数据返回 -1
+
+    // 检查是否已经有缓存的花粉数据
+    const pollenData = AppStorage.get('pollenDataCache') as Map<string, number> || new Map<string, number>()
+    return pollenData.get(cityName) || -1
+  }
+
   // 过滤城市列表
   getFilteredCities(): CityItem[] {
     // 先获取要处理的列表
     let targetList = this.cityList
-    
+
     // 如果有搜索文本,先过滤
     if (this.searchText) {
       const searchLower = this.searchText.toLowerCase()
-      targetList = this.cityList.filter(city => 
+      targetList = this.cityList.filter(city =>
         city.name.toLowerCase().includes(searchLower)
       )
     }
-    
-    // 排序：置顶 > 收藏 > 普通（按距离）
+
+    // 排序：置顶 > 收藏 > 花粉浓度 > 距离
     // 🔴 修复：使用 slice() 创建副本再排序，避免修改原数组
     return [...targetList].sort((a, b) => {
+      // 置顶优先
       if (a.isTop && !b.isTop) return -1
       if (!a.isTop && b.isTop) return 1
+      // 收藏次之
       if (a.isFavorite && !b.isFavorite) return -1
       if (!a.isFavorite && b.isFavorite) return 1
+      // 按花粉浓度排序（如果有数据）
+      const aPollenLevel = this.getPollenLevelForCity(a.name)
+      const bPollenLevel = this.getPollenLevelForCity(b.name)
+      if (aPollenLevel !== -1 && bPollenLevel !== -1) {
+        return aPollenLevel - bPollenLevel  // 从低到高排序
+      } else if (aPollenLevel !== -1) {
+        return -1  // 有数据的排在前面
+      } else if (bPollenLevel !== -1) {
+        return 1   // 有数据的排在前面
+      }
+      // 如果都没有花粉数据，按距离排序
       return a.distance - b.distance
     })
   }

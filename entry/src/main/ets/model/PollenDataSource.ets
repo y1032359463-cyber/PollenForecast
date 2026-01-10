@@ -8,6 +8,7 @@
  */
 export enum PollenDataSourceType {
   GOOGLE = 'GOOGLE',           // Google Pollen API（全球覆盖）
+  MINSHU = 'MINSHU',           // 敏舒城市过敏预报（国内权威，2026-01-09 新增）
   CMA = 'CMA',                 // 中国气象局（国内权威）
   QWEATHER = 'QWEATHER',       // 和风天气（如果支持）
   AUTO = 'AUTO'                // 自动选择（默认）
@@ -47,6 +48,15 @@ export const POLLEN_DATA_SOURCES: PollenDataSourceConfig[] = [
     accuracy: '高',
     updateFrequency: '每日更新',
     enabled: true
+  },
+  {
+    type: PollenDataSourceType.MINSHU,
+    name: '敏舒城市过敏预报',
+    description: '国内权威花粉数据，覆盖全国省市区县',
+    coverage: '国内',
+    accuracy: '高',
+    updateFrequency: '每日更新',
+    enabled: true  // ✅ 已实现（2026-01-09）
   },
   {
     type: PollenDataSourceType.CMA,

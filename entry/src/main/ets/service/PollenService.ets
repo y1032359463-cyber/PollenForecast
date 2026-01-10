@@ -5,8 +5,10 @@
  */
 
 import { http } from '@kit.NetworkKit'
+import { AppStorage } from '@kit.ArkData'
 import { PollenForecastResponse } from '../model/PollenModels'
 import { PollenDataSourceType } from '../model/PollenDataSource'
+import { MinshuDataSourceAdapter } from './MinshuDataSourceAdapter'
 
 /**
  * 服务器配置
@@ -233,9 +235,28 @@ export class PollenService {
     // 根据用户选择调用对应的数据源
     switch (dataSourceType) {
       case PollenDataSourceType.AUTO:
+        // 自动选择：国内城市优先使用敏舒，其他使用 Google
+        const currentCity: string | undefined = AppStorage.get('currentCity') as string | undefined
+        if (currentCity && this.isChineseCity(currentCity)) {
+          console.info('[PollenService] AUTO 模式：检测到国内城市，使用敏舒数据源')
+          return await this.getPollenForecastFromMinshu(latitude, longitude, days, currentCity)
+        } else {
+          console.info('[PollenService] AUTO 模式：使用 Google Pollen API')
+          return await this.getPollenForecastFromGoogle(latitude, longitude, days)
+        }
+      
       case PollenDataSourceType.GOOGLE:
         // 使用现有的多服务器故障转移逻辑（Google Pollen API）
         return await this.getPollenForecastFromGoogle(latitude, longitude, days)
+      
+      case PollenDataSourceType.MINSHU:
+        // 敏舒城市过敏预报（国内权威）
+        const cityName: string | undefined = AppStorage.get('currentCity') as string | undefined
+        if (!cityName) {
+          console.warn('[PollenService] 敏舒数据源需要城市名称')
+          return null
+        }
+        return await this.getPollenForecastFromMinshu(latitude, longitude, days, cityName)
       
       case PollenDataSourceType.CMA:
         // 中国气象局（待实现）
@@ -251,6 +272,49 @@ export class PollenService {
         console.error(`[PollenService] 未知的数据源类型: ${dataSourceType}`)
         // 降级到 Google
         return await this.getPollenForecastFromGoogle(latitude, longitude, days)
+    }
+  }
+
+  /**
+   * 判断是否为国内城市（简单判断，通过城市名是否包含中文字符）
+   */
+  private isChineseCity(cityName: string): boolean {
+    return /[\u4e00-\u9fa5]/.test(cityName)
+  }
+
+  /**
+   * 从敏舒 API 获取数据
+   * @param latitude 纬度
+   * @param longitude 经度
+   * @param days 预报天数
+   * @param cityName 城市名称（用于获取 adcode）
+   */
+  private async getPollenForecastFromMinshu(
+    latitude: number,
+    longitude: number,
+    days: number,
+    cityName: string
+  ): Promise<PollenForecastResponse | null> {
+    try {
+      const adapter = new MinshuDataSourceAdapter()
+      if (!adapter.isAvailable()) {
+        console.warn('[PollenService] 敏舒数据源不可用')
+        return null
+      }
+      
+      console.info(`[PollenService] 开始请求敏舒 API，城市: ${cityName}`)
+      const result = await adapter.fetchPollenDataWithCity(latitude, longitude, days, cityName)
+      
+      if (result) {
+        console.info(`[PollenService] 敏舒 API 获取成功: ${result.regionCode}`)
+      } else {
+        console.warn('[PollenService] 敏舒 API 获取失败')
+      }
+      
+      return result
+    } catch (error) {
+      console.error(`[PollenService] 敏舒 API 请求异常: ${JSON.stringify(error)}`)
+      return null
     }
   }
 

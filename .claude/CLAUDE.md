@@ -1,7 +1,7 @@
 # 花粉浓度播报 (PollenForecast)
 
 > **作用范围**: 本项目专属文档
-> **最后更新**: 2026-01-08 (文档整理机制建立 + CLAUDE.md 精简)
+> **最后更新**: 2026-01-10 (区域Tab优化方案制定)
 > **AI 维护者**: GitHub Copilot / Claude
 
 ---
@@ -38,11 +38,48 @@
 
 ## 🚨 当前状态概要（新窗口必读）
 
-### ⚠️ 当前状态（2026-01-08 更新）
+### ⚠️ 当前状态（2026-01-09 更新）
 
-**API 17 兼容性问题：设备镜像版本需要更新**
+**敏舒数据源集成完成** - 客户端已支持敏舒花粉数据源，用户可选择使用国内权威数据
 
-### ✅ 本次会话完成（2026-01-08）
+### ✅ 本次会话完成（2026-01-09 第2轮）
+1. **🔌 敏舒数据源客户端集成**
+   - 创建 `AdcodeUtils.ets` - 城市编码工具类（城市名 → adcode 映射）
+   - 创建 `MinshuDataSourceAdapter.ets` - 敏舒数据源适配器
+   - 数据格式转换：敏舒 API 格式 → 应用内部格式（category 中英文转换）
+   - 更新 `PollenDataSource.ets` - 添加 MINSHU 数据源类型
+   - 更新 `PollenService.ets` - 支持敏舒数据源调用
+   - AUTO 模式智能选择：国内城市自动使用敏舒，其他使用 Google
+
+2. **📋 待完善功能**
+   - ⏳ 经纬度转 adcode（当前通过城市名匹配，需要服务器端逆地理编码接口）
+   - ⏳ 扩展数据模型支持 `todayAllergy` 字段（过敏等级和建议）
+
+### ✅ 本次会话完成（2026-01-09 第1轮）
+1. **🌾 Minshu 花粉 API 接入**
+   - 在广州和风天气服务器上新增 Minshu 花粉数据代理接口
+   - 接口路径: `/minshu/pollen/day?adcode={adcode}&recordDate={yyyy-MM-dd}`
+   - API Key: `AK-lYpA8KnbT0lzPNvfjIqCSLDMLPz1n3htrENs`（截止 2026-07-01）
+   - 授权范围: 仅花粉数据（未授权城市过敏指数等其他接口）
+   - 城市覆盖: 全国省市区县（adcode 编码表见 `figma/日志.md`）
+   - ⚠️ **关键经验**：
+     * API Key 授权按接口类型，只授权花粉就不能调用其他接口
+     * 请求格式要简单直接，不需要 URL 编码和额外 header，直接拼接 URL
+     * 502 错误通常是请求格式问题，回退到最简单版本解决
+
+2. **📱 首页数据来源标注**
+   - 在顶部导航栏右侧添加感谢信息："感谢北京敏舒科技有限责任公司对数据的支持"
+   - 位置：城市名右侧，不占用页面内容区域
+   - 样式：10px 字体，对比度 ≥ 4.1:1（符合华为无障碍要求）
+   - 宽度限制：45%，避免挤压城市名
+   - 文本溢出：自动省略号处理
+
+3. **📚 文档更新**
+   - 更新服务器架构说明（和风天气服务器新增 Minshu 接口）
+   - 更新 API 配置信息（Minshu API Key 和接口说明）
+   - 更新技术沉淀（Minshu API 使用经验、无障碍对比度要求）
+
+### ✅ 上次会话完成（2026-01-08）
 1. **🗺️ 地图深浅色模式适配工单准备**
    - 整理地图配置和环境信息
    - 创建工单咨询文档（512字版本）
@@ -138,10 +175,36 @@
    - 备份目录 CLAUDE.md 已改名为 .bak（防止 Cursor 重复加载）
    - 全局 User Rules 已提供（可复制到 Cursor Settings）
 
-### ⏳ 待 API 17 真机验证
-- [ ] `controller.on('markerClick')` 是否可用（CodeGenie 方案）
-- [ ] `animateCamera()` 是否需要坐标转换
-- [ ] `MarkerOptions.snippet` 是否有效
+### ⏳ 待完善功能
+- [x] API 17 真机验证 - ✅ 已通过（用户确认）
+- [x] 导航栏毛玻璃效果修复 - ✅ 已替换成其他方案（用户确认）
+- [ ] 经纬度转 adcode 功能（服务器端逆地理编码接口）
+- [ ] 扩展数据模型支持 `todayAllergy` 字段（过敏等级和建议）
+
+### 📋 区域Tab优化计划
+- [ ] 实现花粉浓度排序：按当前城市花粉浓度从低到高排序
+- [ ] 城市分类改进：按照省份或地区分组显示城市列表
+- [ ] 智能搜索增强：增加拼音搜索功能
+- [ ] 城市详情页：点击城市后可查看该城市的详细花粉信息
+- [ ] 搜索历史：记录用户搜索过的城市，方便快速访问
+- [ ] 性能优化：使用虚拟滚动提升大量城市数据的性能
+
+### ✅ 本次会话完成（2026-01-10）
+1. **🔍 区域Tab优化方案制定**
+   - 分析当前23个城市数据与敏舒数据源支持的3000+县级城市规模差异
+   - 制定花粉浓度优先的排序策略（置顶 > 收藏 > 花粉浓度 > 距离）
+   - 设计字母索引（AlphabetIndexer）+ 拼音搜索的大数据量展示方案
+   - 确保与现有手势操作（SwipeAction）完全兼容
+
+2. **📚 知识库整理**
+   - 创建 `区域Tab优化实施计划.md` 详细文档
+   - 将专家建议整理至 `知识库_中转站（待验证实践效果）.md`
+   - 更新待验证清单，添加区域Tab优化专项任务
+
+3. **📋 待办事项确认**
+   - 数据层改造（3人日）：扩展CityItem接口，花粉数据缓存机制
+   - 视图层改造（5人日）：城市分组展示，字母索引功能，增强搜索
+   - 性能优化（4人日）：虚拟滚动，数据分批加载，缓存优化
 
 ### 📂 关键文件位置
 | 文件 | 用途 |
@@ -149,6 +212,8 @@
 | `entry/src/main/ets/utils/ReminderService.ets` | 代理提醒服务（2026-01-07 新增）✨ |
 | `entry/src/main/ets/utils/NotificationService.ets` | 通知服务（调用 ReminderService）|
 | `entry/src/main/ets/utils/ApiVersionUtils.ets` | API 版本检测 |
+| `entry/src/main/ets/utils/AdcodeUtils.ets` | 城市编码工具类（2026-01-09 新增）✨ |
+| `entry/src/main/ets/service/MinshuDataSourceAdapter.ets` | 敏舒数据源适配器（2026-01-09 新增）✨ |
 | `C:\HarmonyOS_App_Plans\.claude\知识库.md` | 已验证的技术方案 |
 
 ---
@@ -364,8 +429,8 @@ HarmonyOS SDK: 6.0.0 (API 20)
   - ✅ Git 提交 `d977351`
 
 #### 待办 📋 (AppGallery审核反馈)
-- [ ] 医疗免责声明添加（可通过调整文案规避）
-- [ ] API 17 真机验证后发布新版本
+- [x] 医疗免责声明添加（可通过调整文案规避）- ✅ 已完成
+- [x] API 17 真机验证后发布新版本 - ✅ 已完成
 
 ### 服务器部署架构 🌐 (2026-01-06 更新)
 
@@ -407,16 +472,19 @@ HarmonyOS SDK: 6.0.0 (API 20)
 
 #### 天气数据服务器
 
-**百度云广州服务器 - 和风天气 API 代理**
+**百度云广州服务器 - 和风天气 + Minshu花粉 API 代理**
 - URL: http://106.12.143.105:3000
-- 作用: 代理和风天气 API，保护 API Key 不暴露在客户端
-- 状态: ✅ 生产环境运行中（2025-12-13 部署）
+- 作用: 代理和风天气 API + Minshu 花粉数据 API，保护 API Key 不暴露在客户端
+- 状态: ✅ 生产环境运行中（2025-12-13 部署，2026-01-09 新增 Minshu 接口）
 - 部署路径: /root/pollen-api/
 - 技术栈: Node.js v20.19.6 + Express + node-cache (15分钟缓存) + PM2
 - 端点:
-  - GET /weather/now?location={lng},{lat}
-  - GET /weather/7d?location={lng},{lat}
-  - GET /astronomy/sun?location={lng},{lat}&date=YYYYMMDD
+  - [和风天气]
+    - GET /weather/now?location={lng},{lat}
+    - GET /weather/7d?location={lng},{lat}
+    - GET /astronomy/sun?location={lng},{lat}&date=YYYYMMDD
+  - [Minshu花粉]（仅授权花粉数据）
+    - GET /minshu/pollen/day?adcode={城市编码}&recordDate={yyyy-MM-dd}
   - GET /health (健康检查)
 - 响应速度: 50-300ms（国内服务器，极快）
 
@@ -440,6 +508,19 @@ http://47.84.1.164:5000/pollen-api?lat=23.12&lng=113.26&days=5
 AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 ```
 
+**Minshu 城市过敏预报 API：**
+- API Key: `AK-lYpA8KnbT0lzPNvfjIqCSLDMLPz1n3htrENs`
+- 截止日期: 2026-07-01
+- 授权范围: 花粉当天24h、花粉未来5天（仅花粉数据，未授权城市过敏指数等其他接口）
+- 基础URL: `https://cdn.myminshu.com`
+- 代理接口: `http://106.12.143.105:3000/minshu/pollen/day?adcode={adcode}&recordDate={yyyy-MM-dd}`
+- 城市覆盖: 全国省市区县（adcode 编码表见 `figma/日志.md`）
+- 数据格式: JSON，包含 `pollenTypeInfo`（树花粉/草花粉/禾本科）、`plantInfo`（具体植物信息）、`todayAllergy`（过敏等级和建议）
+- ⚠️ **重要经验**：
+  - API Key 授权是**按接口类型**的，只授权花粉数据就不能调用城市过敏指数等其他接口
+  - 请求格式要**简单直接**，不需要 URL 编码 API Key，不需要额外 header，直接拼接 URL 即可
+  - 502 错误通常是请求格式问题，回退到最简单版本就能解决
+
 **备注：** 当前是冬季（12月），全球花粉活动低，API 返回数据中无 indexInfo。春季（3-5月）将有完整花粉浓度数据。
 
 ### 代码备份记录 💾
@@ -447,6 +528,7 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 | 备份时间 | 版本 | 路径 | 大小 | 说明 |
 |---------|------|------|------|------|
 | 2026-01-06 01:41 | v1.0.2 | Git 提交 `6655b3b` | - | 用户可选择的多数据源架构（PollenDataSource + 适配器接口 + 设置UI） |
+| 2026-01-10 13:04 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260110_130400` | - | 区域Tab优化方案制定后的备份 |
 | 2026-01-06 01:41 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260106_014100` | - | 多数据源架构完成后的备份 |
 | 2026-01-05 17:30 | v1.0.1 | Git 提交 `d977351` | - | API 17 兼容性实施（ApiVersionUtils + 事件监听兼容） |
 | 2026-01-05 16:21 | v1.0.1 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.1_20260105_162141` | 15.85 MB | API 17兼容性咨询文档 + MapKit功能清单 |
@@ -522,6 +604,24 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 | `promptAction.*` (静态) | `this.getUIContext().getPromptAction().*` | 必须通过 UIContext 调用 |
 | `router.*` (静态) | `this.getUIContext().getRouter().*` | 必须通过 UIContext 调用 |
 | `getContext(this)` | `this.getUIContext().getHostContext()` | 获取上下文的新方式 |
+
+### Minshu 花粉 API 使用经验 (2026-01-09)
+| 问题 | 解决方案 | 说明 |
+|------|---------|------|
+| **API Key 授权范围** | 只申请已授权的接口类型 | API Key 授权是按接口类型的，只授权花粉数据就不能调用城市过敏指数等其他接口 |
+| **请求格式** | 简单直接，直接拼接 URL | 不需要 `encodeURIComponent` 编码 API Key，不需要额外 header，直接 `?apikey=${KEY}` 即可 |
+| **502 错误** | 回退到最简单的请求格式 | 502 Bad Gateway 通常是请求格式问题，去掉 URL 编码和额外 header 就能解决 |
+| **城市编码** | 使用 adcode（6位数字） | 如 `110114` 代表北京市昌平区，完整编码表见 `figma/日志.md` |
+| **日期格式** | `yyyy-MM-dd` | 如 `2026-01-09`，支持查询今天和未来日期 |
+| **缓存策略** | 15分钟过期 | 使用 `node-cache`，减少 API 调用频率 |
+
+### 无障碍设计 - 对比度要求 (2026-01-09)
+| 要求 | 标准 | 实现方式 |
+|------|------|---------|
+| **文本对比度** | ≥ 4.1:1（华为 AppGallery 要求） | 根据主题动态选择颜色：浅色模式用 `#555555`（4.2:1），深色模式用 `#CCCCCC`（4.2:1） |
+| **颜色选择** | 使用 `getDataSourceTextColor()` 方法 | 通过 `currentColorMode` 判断主题，返回对应的高对比度颜色 |
+| **Text 组件限制** | 不支持 `maxWidth` 属性 | 使用 `width('45%')` + `textAlign(TextAlign.End)` 替代 |
+| **位置选择** | 顶部导航栏右侧 | 不占用内容区域，不影响后续功能扩展，符合常见版权信息位置 |
 
 ---
 
