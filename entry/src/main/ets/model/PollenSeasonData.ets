@@ -418,12 +418,21 @@ export const POLLEN_SEASON_DATABASE: PollenSeasonInfo[] = [
  * 根据城市名称查找花粉季节信息
  */
 export function getPollenSeasonByCity(cityName: string): PollenSeasonInfo | null {
-  return POLLEN_SEASON_DATABASE.find(item => item.cityName === cityName) || null
+  for (let i = 0; i < POLLEN_SEASON_DATABASE.length; i++) {
+    if (POLLEN_SEASON_DATABASE[i].cityName === cityName) {
+      return POLLEN_SEASON_DATABASE[i]
+    }
+  }
+  return null
 }
 
 /**
  * 获取所有支持的城市列表
  */
 export function getSupportedCities(): string[] {
-  return POLLEN_SEASON_DATABASE.map(item => item.cityName)
+  const result: string[] = []
+  for (let i = 0; i < POLLEN_SEASON_DATABASE.length; i++) {
+    result.push(POLLEN_SEASON_DATABASE[i].cityName)
+  }
+  return result
 }

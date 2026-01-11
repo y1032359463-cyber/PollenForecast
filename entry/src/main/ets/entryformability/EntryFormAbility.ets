@@ -83,8 +83,23 @@ export default class EntryFormAbility extends FormExtensionAbility {
     try {
       const pref = await this.getPreferences();
       let ids = (await pref.get(KEY_FORM_IDS, [])) as string[];
-      if (ids.includes(formId)) {
-        ids = ids.filter(id => id !== formId);
+      // 检查是否包含该 formId
+      let hasFormId = false
+      for (let i = 0; i < ids.length; i++) {
+        if (ids[i] === formId) {
+          hasFormId = true
+          break
+        }
+      }
+      if (hasFormId) {
+        // 过滤掉该 formId
+        const newIds: string[] = []
+        for (let i = 0; i < ids.length; i++) {
+          if (ids[i] !== formId) {
+            newIds.push(ids[i])
+          }
+        }
+        ids = newIds
         await pref.put(KEY_FORM_IDS, ids);
         await pref.flush();
         console.info('[EntryFormAbility] Removed formId: ' + formId);

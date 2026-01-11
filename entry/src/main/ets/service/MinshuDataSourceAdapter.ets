@@ -4,7 +4,6 @@
  */
 
 import { http } from '@kit.NetworkKit'
-import { AppStorage } from '@kit.ArkData'
 import { IPollenDataSourceAdapter } from './PollenDataSourceAdapter'
 import { PollenForecastResponse, DailyInfo, PollenTypeInfo, IndexInfo, PlantInfo, DateInfo } from '../model/PollenModels'
 import { getAdcodeByCityName } from '../utils/AdcodeUtils'
@@ -17,28 +16,34 @@ const MINSHU_PROXY_BASE = 'http://106.12.143.105:3000'
 /**
  * 敏舒 API 响应格式（原始）
  */
+interface MinshuApiData {
+  regionCode: string
+  dailyInfo: MinshuDailyInfo[]
+}
+
+interface MinshuDateInfo {
+  year: number
+  month: number
+  day: number
+  hour?: number  // 24小时数据包含此字段
+}
+
+interface MinshuTodayAllergy {
+  level: number
+  precision: number
+  prompt: string
+  suggestList: string[]
+}
+
 interface MinshuApiResponse {
   code: number
   msg: string
-  data: {
-    regionCode: string
-    dailyInfo: MinshuDailyInfo[]
-  }
+  data: MinshuApiData
 }
 
 interface MinshuDailyInfo {
-  date: {
-    year: number
-    month: number
-    day: number
-    hour?: number  // 24小时数据包含此字段
-  }
-  todayAllergy?: {
-    level: number
-    precision: number
-    prompt: string
-    suggestList: string[]
-  }
+  date: MinshuDateInfo
+  todayAllergy?: MinshuTodayAllergy
   pollenTypeInfo: MinshuPollenTypeInfo[]
   plantInfo: MinshuPlantInfo[]
 }
@@ -51,17 +56,28 @@ interface MinshuPollenTypeInfo {
   healthRecommendations: string[]
 }
 
+interface MinshuColorInfo {
+  red: number
+  green: number
+  blue: number
+}
+
 interface MinshuIndexInfo {
   code: string
   displayName: string
   value: number
   category: string  // 中文：无/极低/低/中/高/极高
   indexDescription: string
-  color?: {
-    red: number
-    green: number
-    blue: number
-  }
+  color?: MinshuColorInfo
+}
+
+interface MinshuPlantDescription {
+  type: string
+  family: string
+  season: string
+  specialColors?: string
+  specialShapes?: string
+  crossReaction?: string
 }
 
 interface MinshuPlantInfo {
@@ -69,14 +85,7 @@ interface MinshuPlantInfo {
   displayName: string
   inSeason: boolean
   indexInfo: MinshuIndexInfo | null
-  plantDescription?: {
-    type: string
-    family: string
-    season: string
-    specialColors?: string
-    specialShapes?: string
-    crossReaction?: string
-  }
+  plantDescription?: MinshuPlantDescription
 }
 
 /**
@@ -85,20 +94,6 @@ interface MinshuPlantInfo {
 export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
   name: string = '敏舒城市过敏预报'
   
-  /**
-   * 获取花粉预报数据（带城市名，用于获取 adcode）
-   * @param lat 纬度
-   * @param lng 经度
-   * @param days 预报天数
-   * @param cityName 城市名称（用于获取 adcode）
-   */
-  async fetchPollenDataWithCity(
-    lat: number,
-    lng: number,
-    days: number,
-    cityName: string
-  ): Promise<PollenForecastResponse | null> {
-
   /**
    * 检查数据源是否可用
    */
@@ -167,15 +162,28 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
    * 转换敏舒的 DailyInfo 为应用内部格式
    */
   private convertDailyInfo(minshuDaily: MinshuDailyInfo): DailyInfo {
-    return {
-      date: {
-        year: minshuDaily.date.year,
-        month: minshuDaily.date.month,
-        day: minshuDaily.date.day
-      },
-      pollenTypeInfo: minshuDaily.pollenTypeInfo.map(type => this.convertPollenTypeInfo(type)),
-      plantInfo: minshuDaily.plantInfo.map(plant => this.convertPlantInfo(plant))
+    const pollenTypeInfoArray: PollenTypeInfo[] = []
+    for (let i = 0; i < minshuDaily.pollenTypeInfo.length; i++) {
+      pollenTypeInfoArray.push(this.convertPollenTypeInfo(minshuDaily.pollenTypeInfo[i]))
     }
+
+    const plantInfoArray: PlantInfo[] = []
+    for (let j = 0; j < minshuDaily.plantInfo.length; j++) {
+      plantInfoArray.push(this.convertPlantInfo(minshuDaily.plantInfo[j]))
+    }
+
+    const dateInfo: DateInfo = {
+      year: minshuDaily.date.year,
+      month: minshuDaily.date.month,
+      day: minshuDaily.date.day
+    }
+
+    const result: DailyInfo = {
+      date: dateInfo,
+      pollenTypeInfo: pollenTypeInfoArray,
+      plantInfo: plantInfoArray
+    }
+    return result
   }
 
   /**
@@ -265,9 +273,14 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
       }
 
       // 5. 转换数据格式
+      const dailyInfoArray: DailyInfo[] = []
+      for (let i = 0; i < minshuResponse.data.dailyInfo.length; i++) {
+        dailyInfoArray.push(this.convertDailyInfo(minshuResponse.data.dailyInfo[i]))
+      }
+
       const convertedResponse: PollenForecastResponse = {
         regionCode: minshuResponse.data.regionCode,
-        dailyInfo: minshuResponse.data.dailyInfo.map(daily => this.convertDailyInfo(daily))
+        dailyInfo: dailyInfoArray
       }
 
       console.info(`[MinshuAdapter] 数据转换成功，共 ${convertedResponse.dailyInfo.length} 天数据`)

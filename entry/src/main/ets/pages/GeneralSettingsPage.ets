@@ -26,17 +26,43 @@ struct GeneralSettingsPage {
   
   // 数据源选项
   private getDataSourceOptions(): string[] {
-    return POLLEN_DATA_SOURCES
-      .filter(source => source.enabled)
-      .map(source => source.name)
+    const result: string[] = []
+    for (let i = 0; i < POLLEN_DATA_SOURCES.length; i++) {
+      const source = POLLEN_DATA_SOURCES[i]
+      if (source.enabled) {
+        result.push(source.name)
+      }
+    }
+    return result
   }
   
   // 获取当前选中的数据源索引
   private getCurrentDataSourceIndex(): number {
     const currentType = this.pollenDataSource as PollenDataSourceType
-    const enabledSources = POLLEN_DATA_SOURCES.filter(s => s.enabled)
-    const index = enabledSources.findIndex(s => s.type === currentType)
-    return index >= 0 ? index : 0
+    let foundIndex = 0
+    let enabledIndex = 0
+    for (let i = 0; i < POLLEN_DATA_SOURCES.length; i++) {
+      const source = POLLEN_DATA_SOURCES[i]
+      if (source.enabled) {
+        if (source.type === currentType) {
+          foundIndex = enabledIndex
+          break
+        }
+        enabledIndex++
+      }
+    }
+    return foundIndex
+  }
+
+  // 获取启用的数据源列表
+  private getEnabledDataSources(): PollenDataSourceConfig[] {
+    const result: PollenDataSourceConfig[] = []
+    for (let i = 0; i < POLLEN_DATA_SOURCES.length; i++) {
+      if (POLLEN_DATA_SOURCES[i].enabled) {
+        result.push(POLLEN_DATA_SOURCES[i])
+      }
+    }
+    return result
   }
 
   // 触发震动反馈
@@ -288,7 +314,7 @@ struct GeneralSettingsPage {
               .padding({ bottom: 8 })
 
             Column() {
-              ForEach(POLLEN_DATA_SOURCES.filter((s: PollenDataSourceConfig) => s.enabled), (source: PollenDataSourceConfig, index: number) => {
+              ForEach(this.getEnabledDataSources(), (source: PollenDataSourceConfig, index: number) => {
                 Row() {
                   Column() {
                     Text(source.name)
@@ -325,7 +351,7 @@ struct GeneralSettingsPage {
                   })
                 })
 
-                if (index < POLLEN_DATA_SOURCES.filter(s => s.enabled).length - 1) {
+                if (index < this.getEnabledDataSources().length - 1) {
                   Divider()
                     .color($r('app.color.divider_color'))
                     .margin({ left: 16 })

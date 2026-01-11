@@ -5,7 +5,6 @@
  */
 
 import { http } from '@kit.NetworkKit'
-import { AppStorage } from '@kit.ArkData'
 import { PollenForecastResponse } from '../model/PollenModels'
 import { PollenDataSourceType } from '../model/PollenDataSource'
 import { MinshuDataSourceAdapter } from './MinshuDataSourceAdapter'
@@ -235,11 +234,17 @@ export class PollenService {
     // 根据用户选择调用对应的数据源
     switch (dataSourceType) {
       case PollenDataSourceType.AUTO:
-        // 自动选择：国内城市优先使用敏舒，其他使用 Google
+        // 自动选择：国内城市优先使用敏舒，失败后降级到 Google
         const currentCity: string | undefined = AppStorage.get('currentCity') as string | undefined
         if (currentCity && this.isChineseCity(currentCity)) {
-          console.info('[PollenService] AUTO 模式：检测到国内城市，使用敏舒数据源')
-          return await this.getPollenForecastFromMinshu(latitude, longitude, days, currentCity)
+          console.info('[PollenService] AUTO 模式：检测到国内城市，尝试敏舒数据源')
+          const minshuResult = await this.getPollenForecastFromMinshu(latitude, longitude, days, currentCity)
+          if (minshuResult) {
+            return minshuResult
+          }
+          // 敏舒失败，降级到 Google
+          console.warn('[PollenService] AUTO 模式：敏舒数据源失败，降级到 Google Pollen API')
+          return await this.getPollenForecastFromGoogle(latitude, longitude, days)
         } else {
           console.info('[PollenService] AUTO 模式：使用 Google Pollen API')
           return await this.getPollenForecastFromGoogle(latitude, longitude, days)

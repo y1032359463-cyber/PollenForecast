@@ -774,19 +774,13 @@ export struct PollenIndexView {
       Stack() {
         // 渐变背景区域
         Polygon({ width: '100%', height: 120 })
-          .points(this.buildGradientArea(this.monthlyData.map(item => {
-            const trendItem: TrendItem = { date: item.label, value: item.value }
-            return trendItem
-          }), 120, 1.2))
+          .points(this.buildGradientArea(this.monthlyDataToTrend(), 120, 1.2))
           .fill('#42A5F5')
           .opacity(0.15)
         
         // 曲线
         Polyline({ width: '100%', height: 120 })
-          .points(this.buildCurvePath(this.monthlyData.map(item => {
-            const trendItem: TrendItem = { date: item.label, value: item.value }
-            return trendItem
-          }), 120, 1.2))
+          .points(this.buildCurvePath(this.monthlyDataToTrend(), 120, 1.2))
           .stroke('#42A5F5')
           .strokeWidth(2.5)
           .strokeLineCap(LineCapStyle.Round)
@@ -905,19 +899,13 @@ export struct PollenIndexView {
       Stack() {
         // 渐变背景区域
         Polygon({ width: '100%', height: 100 })
-          .points(this.buildGradientArea(this.getYearlyData().map(item => {
-            const trendItem: TrendItem = { date: item.month, value: item.value }
-            return trendItem
-          }), 100, 1.0))
+          .points(this.buildGradientArea(this.yearlyDataToTrend(), 100, 1.0))
           .fill(this.pollenThemeColor)
           .opacity(0.12)
         
         // 曲线
         Polyline({ width: '100%', height: 100 })
-          .points(this.buildCurvePath(this.getYearlyData().map(item => {
-            const trendItem: TrendItem = { date: item.month, value: item.value }
-            return trendItem
-          }), 100, 1.0))
+          .points(this.buildCurvePath(this.yearlyDataToTrend(), 100, 1.0))
           .stroke(this.pollenThemeColor)
           .strokeWidth(2.5)
           .strokeLineCap(LineCapStyle.Round)
@@ -1046,7 +1034,9 @@ export struct PollenIndexView {
     }
     
     // 生成动态数据
-    return baseTemplate.map((baseValue, index) => {
+    const result: YearDataItem[] = []
+    for (let index = 0; index < baseTemplate.length; index++) {
+      const baseValue = baseTemplate[index]
       const month = index + 1
       const adjustedValue = Math.round(baseValue * scaleFactor)
       const isPeak = baseValue >= 60  // 基础值≥60视为高峰期
@@ -1057,8 +1047,9 @@ export struct PollenIndexView {
         isPeak: isPeak,
         isCurrent: month === currentMonth
       }
-      return yearItem
-    })
+      result.push(yearItem)
+    }
+    return result
   }
 
   // ========== 曲线图辅助函数 ==========
@@ -1102,6 +1093,29 @@ export struct PollenIndexView {
     points.push([width, height])
     
     return points
+  }
+
+  // 将 MonthDataItem[] 转换为 TrendItem[]
+  private monthlyDataToTrend(): TrendItem[] {
+    const result: TrendItem[] = []
+    for (let i = 0; i < this.monthlyData.length; i++) {
+      const item = this.monthlyData[i]
+      const trendItem: TrendItem = { date: item.label, value: item.value }
+      result.push(trendItem)
+    }
+    return result
+  }
+
+  // 将 YearDataItem[] 转换为 TrendItem[]
+  private yearlyDataToTrend(): TrendItem[] {
+    const yearlyData = this.getYearlyData()
+    const result: TrendItem[] = []
+    for (let i = 0; i < yearlyData.length; i++) {
+      const item = yearlyData[i]
+      const trendItem: TrendItem = { date: item.month, value: item.value }
+      result.push(trendItem)
+    }
+    return result
   }
 
   // ========== 长按预览方法 ==========

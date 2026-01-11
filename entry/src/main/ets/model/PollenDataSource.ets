@@ -82,15 +82,23 @@ export const POLLEN_DATA_SOURCES: PollenDataSourceConfig[] = [
  * 获取数据源显示名称
  */
 export function getDataSourceName(type: PollenDataSourceType): string {
-  const source = POLLEN_DATA_SOURCES.find(s => s.type === type)
-  return source?.name || '未知'
+  for (let i = 0; i < POLLEN_DATA_SOURCES.length; i++) {
+    if (POLLEN_DATA_SOURCES[i].type === type) {
+      return POLLEN_DATA_SOURCES[i].name
+    }
+  }
+  return '未知'
 }
 
 /**
  * 获取数据源描述
  */
 export function getDataSourceDescription(type: PollenDataSourceType): string {
-  const source = POLLEN_DATA_SOURCES.find(s => s.type === type)
-  return source?.description || ''
+  for (let i = 0; i < POLLEN_DATA_SOURCES.length; i++) {
+    if (POLLEN_DATA_SOURCES[i].type === type) {
+      return POLLEN_DATA_SOURCES[i].description
+    }
+  }
+  return ''
 }
 

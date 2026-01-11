@@ -198,7 +198,10 @@ export function getAdcodeByCityName(cityName: string): string | null {
   }
   
   // 模糊匹配（包含关系）
-  for (const [key, value] of CITY_ADCODE_MAP.entries()) {
+  const entries = CITY_ADCODE_MAP.entries()
+  for (let it = entries.next(); !it.done; it = entries.next()) {
+    const key = it.value[0]
+    const value = it.value[1]
     if (cleanName.includes(key) || key.includes(cleanName)) {
       return value
     }
