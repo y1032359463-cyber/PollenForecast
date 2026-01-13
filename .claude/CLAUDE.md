@@ -38,9 +38,9 @@
 
 ## 🚨 当前状态概要（新窗口必读）
 
-### ⚠️ 当前状态（2026-01-11 更新）
+### ⚠️ 当前状态（2026-01-13 更新）
 
-**敏舒API代理服务器故障** - 应急处理已完成，增强了AUTO模式降级策略，待部署冗余服务器
+**三级菜单功能完全修复** - 直辖市特殊数据结构处理已完成，所有城市（包括北京、上海、天津、重庆）均可正常弹出区县选择菜单 ✅
 
 **敏舒数据源集成完成** - 客户端已支持敏舒花粉数据源，用户可选择使用国内权威数据
 
@@ -57,11 +57,14 @@
 ### 📋 区域Tab优化计划
 - [ ] 实现花粉浓度排序：按当前城市花粉浓度从低到高排序
 - [x] 城市分类改进：按照省份或地区分组显示城市列表（已实现省份分组折叠，当前使用精选城市列表，2026-01-11）
-- [ ] **三级城市选择功能**（新增，2026-01-11）
-  - Phase 1: API 20完整功能（bindSheet + swipeAction） - 优先实施
+- [x] **三级城市选择功能**（新增，2026-01-11，2026-01-13 完全修复）✨
+  - ✅ UTF-8编码问题已修复（TextDecoder正确解码）
+  - ✅ 深色模式弹窗背景色已适配（使用动态资源）
+  - ✅ **直辖市特殊处理**（北京、上海、天津、重庆） - 2026-01-13 新增✨
+  - ✅ 数据来源: 使用本地JSON数据（modood/china-area-data）
+  - ✅ 区县列表正常弹出
+  - Phase 1: API 20完整功能（bindSheet + swipeAction） - ✅ 已完成
   - Phase 2: API 17兼容性改造（bindContentCover + 长按ActionSheet） - 待后续
-  - 数据来源: ✅ 已确认使用本地JSON数据（modood/china-area-data）
-  - 专家共识: 四位专家100%推荐JSON方案，Map Kit无区县查询API
 - [ ] 智能搜索增强：增加拼音搜索功能
 - [ ] 城市详情页：点击城市后可查看该城市的详细花粉信息
 - [ ] 搜索历史：记录用户搜索过的城市，方便快速访问
@@ -76,6 +79,7 @@
 | `entry/src/main/ets/utils/NotificationService.ets` | 通知服务（调用 ReminderService）|
 | `entry/src/main/ets/utils/ApiVersionUtils.ets` | API 版本检测 |
 | `entry/src/main/ets/utils/AdcodeUtils.ets` | 城市编码工具类（2026-01-09 新增）✨ |
+| `entry/src/main/ets/utils/ChinaAreaDataLoader.ets` | 城市区县数据加载器（2026-01-13 修夏）✨ |
 | `entry/src/main/ets/service/MinshuDataSourceAdapter.ets` | 敏舒数据源适配器（2026-01-09 新增）✨ |
 | `C:\HarmonyOS_App_Plans\.claude\知识库.md` | 已验证的技术方案 |
 | `C:\HarmonyOS_App_Plans\.claude\备份规则.md` | 项目备份规则和操作指南（2026-01-10 新增）✨ |
@@ -391,6 +395,7 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 | 备份时间 | 版本 | 路径 | 大小 | 说明 |
 |---------|------|------|------|------|
+| 2026-01-13 22:55 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260113_225500` | - | 三级菜单直辖市修复后的备份✨ |
 | 2026-01-10 17:11 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260110_171156` | 12.99 MB | 项目备份规则建立后的备份（已修复配置）✨ |
 | 2026-01-06 01:41 | v1.0.2 | Git 提交 `6655b3b` | - | 用户可选择的多数据源架构（PollenDataSource + 适配器接口 + 设置UI） |
 | 2026-01-10 13:04 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260110_130400` | - | 区域Tab优化方案制定后的备份 |

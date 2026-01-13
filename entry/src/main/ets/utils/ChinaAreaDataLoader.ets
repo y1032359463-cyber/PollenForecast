@@ -5,6 +5,7 @@
 
 import { CityItem, DistrictItem, LocationCoordinate } from './CityUtils'
 import resourceManager from '@ohos.resourceManager'
+import util from '@ohos.util'  // ✅ 导入TextDecoder
 
 // 原始数据接口（与JSON结构对应）
 interface RawAreaData {
@@ -41,12 +42,10 @@ export async function loadChinaAreaData(context: Context): Promise<CityItem[]> {
     // 读取rawfile中的JSON文件
     const rawFile = await resMgr.getRawFileContent('china_area_full.json')
     
-    // 转换为Uint8Array再转为字符串
+    // 🔧 使用TextDecoder正确解码UTF-8
     const uint8Array = new Uint8Array(rawFile.buffer)
-    let jsonString = ''
-    for (let i = 0; i < uint8Array.length; i++) {
-      jsonString += String.fromCharCode(uint8Array[i])
-    }
+    const decoder = new util.TextDecoder('utf-8')
+    const jsonString = decoder.decodeWithStream(uint8Array)
     
     // 解析JSON
     const provinceData: RawAreaData[] = JSON.parse(jsonString)
@@ -55,7 +54,45 @@ export async function loadChinaAreaData(context: Context): Promise<CityItem[]> {
     const cities: CityItem[] = []
     
     for (const province of provinceData) {
-      // 遍历省份下的城市
+      // 📦 特殊处理：直辖市（北京、上海、天津、重庆）
+      // 直辖市的 province 本身就是城市，区县在 province.districts[0].districts 中
+      const isDirectCity = ['北京', '上海', '天津', '重庆'].some(name => province.name.includes(name))
+      
+      if (isDirectCity && province.districts.length > 0) {
+        // 直辖市：直接使用 province 作为 city，区县从第一个 districts 中获取
+        const cityDistricts = province.districts[0]?.districts || []
+        const location = parseCenter(province.center)
+        
+        const districts: DistrictItem[] = []
+        for (const district of cityDistricts) {
+          if (district.level === 'district') {
+            const districtLocation = parseCenter(district.center)
+            districts.push({
+              name: district.name,
+              cityName: province.name,
+              isFavorite: false,
+              isTop: false,
+              adcode: district.adcode,
+              location: districtLocation
+            })
+          }
+        }
+        
+        cities.push({
+          name: province.name,
+          province: province.name,
+          distance: 0,
+          isFavorite: false,
+          isTop: false,
+          hasDistricts: districts.length > 0,
+          districts: districts.length > 0 ? districts : undefined,
+          adcode: province.adcode,
+          location: location
+        })
+        continue
+      }
+      
+      // 普通省份：遍历省份下的城市
       for (const city of province.districts) {
         if (city.level !== 'city') continue
         

@@ -231,10 +231,18 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
   ): Promise<PollenForecastResponse | null> {
     try {
       // 1. 获取 adcode（城市编码）
-      const adcode = getAdcodeByCityName(cityName)
+      // 如果城市名包含 " - "，说明是区县级，提取区县名
+      let targetName = cityName
+      if (cityName.includes(' - ')) {
+        const parts = cityName.split(' - ')
+        targetName = parts[1] || parts[0] // 使用区县名
+        console.info(`[MinshuAdapter] 检测到区县级，提取区县名: ${targetName}`)
+      }
+      
+      const adcode = getAdcodeByCityName(targetName)
       
       if (!adcode) {
-        console.warn(`[MinshuAdapter] 无法获取城市 ${cityName} 的 adcode`)
+        console.warn(`[MinshuAdapter] 无法获取城市 ${cityName} (查询名: ${targetName}) 的 adcode`)
         return null
       }
 
@@ -244,7 +252,7 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
 
       // 3. 调用敏舒 API（通过代理服务器）
       const url = `${MINSHU_PROXY_BASE}/minshu/pollen/day?adcode=${adcode}&recordDate=${recordDate}`
-      console.info(`[MinshuAdapter] 请求敏舒 API: ${url}`)
+      console.info(`[MinshuAdapter] 请求敏舒 API: ${url} (cityName=${cityName}, targetName=${targetName}, adcode=${adcode})`)
 
       const httpRequest = http.createHttp()
       const response = await httpRequest.request(url, {

@@ -16,24 +16,12 @@ import {
   searchCities,
   sortCities,
   CityGroup,
-  CityItem as CityItemType
+  CityItem,
+  DistrictItem
 } from '../utils/CityUtils'
 import { PollenService } from '../service/PollenService'
 import { PollenLevel, getMaxPollenFromDaily } from '../model/PollenModels'
 import { loadChinaAreaData, getCityWithDistricts } from '../utils/ChinaAreaDataLoader'  // 新增：区县数据加载器
-
-// 重新定义CityItem以确保与CityUtils中的定义一致
-interface CityItem {
-  name: string
-  distance: number
-  isFavorite: boolean
-  isTop: boolean
-  pollenLevel?: number  // 花粉等级 (0-5, -1表示无数据)
-  pollenIndex?: number  // 花粉指数值
-  province?: string     // 省份名称
-  pinyin?: string       // 拼音（用于搜索和排序）
-  pinyinInitial?: string // 拼音首字母（用于字母索引）
-}
 
 // 城市坐标接口
 interface CityCoordinate {
@@ -86,6 +74,8 @@ export struct RegionView {
   @State isRefreshingLocation: boolean = false  // GPS定位中
   private lastUpdateTime: number = 0  // 节流：上次更新时间
   private pendingOffset: Map<string, number> = new Map()  // 节流：待更新的偏移值
+  private swipeStartTime: number = 0  // 手势开始时间
+  private isSwipeGesture: boolean = false  // 是否为手势滑动（区分点击和滑动）
   private cachedLocation: LocationInfo | null = null  // 缓存的GPS位置，用于快速响应
   @StorageLink('safeTop') safeTop: number = 44
   @StorageLink('safeBottom') safeBottom: number = 28
@@ -144,6 +134,11 @@ export struct RegionView {
 
   // 分组展开状态（改用数组，解决Set不触发响应式更新问题）
   @State expandedGroups: string[] = []
+
+  // ====== 区县选择相关状态 ======
+  @State allCitiesData: CityItem[] = []  // 完整城市数据（包含区县信息）
+  @State showDistrictDialog: boolean = false  // 是否显示区县选择弹窗
+  @State selectedCityForDistrict: CityItem | null = null  // 当前选中要查看区县的城市
 
   // 判断是否应该播放动画(仅首次加载且前10项)
   shouldAnimate(index: number): boolean {
@@ -603,6 +598,9 @@ export struct RegionView {
       const allCitiesWithDistricts = await loadChinaAreaData(getContext(this))
       const loadTime = Date.now() - startTime
       
+      // ✅ 保存到状态变量
+      this.allCitiesData = allCitiesWithDistricts
+      
       console.info(`[RegionView-Test] ✅ 加载成功！`)
       console.info(`[RegionView-Test] 总城市数：${allCitiesWithDistricts.length}`)
       console.info(`[RegionView-Test] 加载耗时：${loadTime}ms`)
@@ -703,177 +701,385 @@ export struct RegionView {
     }, 50)
   }
 
+  // ====== 区县选择弹窗 ======
   @Builder
-  CityItemComponent(city: CityItem) {
-    // P0优化: 手动实现滑动，替代 swipeAction
-    Stack({ alignContent: Alignment.End }) {
-      // 背景层：操作按钮
-      Row() {
-        Button({ type: ButtonType.Normal }) {
-          Text(city.isFavorite ? '取消收藏' : '收藏')
-            .fontSize(14)
-            .fontColor(Color.White)
-        }
-        .width(80)
-        .height('100%')
-        .backgroundColor(city.isFavorite ? '#757575' : '#FF6B35')
-        .onClick(() => {
-          this.toggleFavorite(city.name)
-          // 操作后回弹
-          animateTo({ duration: 200 }, () => {
-            this.swipeOffsets.set(city.name, 0)
-          })
-        })
-
-        if (city.isFavorite && !city.isTop) {
-          Button({ type: ButtonType.Normal }) {
-            Text('置顶').fontSize(14).fontColor(Color.White)
-          }
-          .width(60)
-          .height('100%')
-          .backgroundColor('#4CAF50')
-          .onClick(() => {
-            this.moveToTop(city.name)
-            animateTo({ duration: 200 }, () => {
-              this.swipeOffsets.set(city.name, 0)
-            })
-          })
-        }
-      }
-      .height('100%')
-
-      // 主内容层
-      Row() {
-        // 状态图标：置顶 > 收藏 > 普通
-        if (city.isTop) {
-          Image($r('app.media.icon_pin'))
-            .width(14)
-            .height(14)
-            .fillColor(this.pollenThemeColor)
-        } else if (city.isFavorite) {
-          Image($r('app.media.icon_star'))
-            .width(14)
-            .height(14)
-            .fillColor('#FFD700')
-        } else {
-          Image($r('app.media.icon_chevron_right'))
-            .width(12)
-            .height(12)
-            .fillColor(this.pollenThemeColor)
-        }
-
-        // 城市名称
+  DistrictDialog() {
+    Column() {
+      // 区县列表（包含市级选项）
+      // 统一显示，无论有无区县
+      if (!this.selectedCityForDistrict) {
+        // 没有选中城市数据（异常情况）
         Column() {
-          Text(city.name)
-            .fontSize(15)
-            .fontColor(city.isTop ? '#FFD700' : (city.isFavorite ? '#FF6B35' : $r('app.color.text_primary')))
-
-          // 花粉浓度显示（如果有数据）
-          if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
-            Row() {
-              Text(`花粉: ${city.pollenLevel}级`)
-                .fontSize(11)
-                .fontColor($r('app.color.text_secondary'))
-
-              if (city.pollenIndex !== undefined && city.pollenIndex > 0) {
-                Text(`(${city.pollenIndex})`)
-                  .fontSize(11)
-                  .fontColor($r('app.color.text_secondary'))
-                  .margin({ left: 4 })
-              }
-            }
-            .margin({ top: 2 })
-          }
-        }
-        .alignItems(HorizontalAlign.Start)
-        .margin({ left: 12 })
-
-        Blank()
-
-        // 距离和花粉信息
-        Column() {
-          Text(`${city.distance}公里`)
+          Text('数据加载失败')
             .fontSize(14)
             .fontColor($r('app.color.text_secondary'))
+            .margin({ top: 20, bottom: 20 })
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Center)
+      } else {
+        // 区县列表（包含市级选项）
+        List({ space: 0 }) {
+          // 首项：整个市级选项（支持手势）
+          ListItem() {
+            Stack({ alignContent: Alignment.End }) {
+              // 背景层：操作按钮
+              Row() {
+                Button({ type: ButtonType.Normal }) {
+                  Text('收藏')
+                    .fontSize(14)
+                    .fontColor(Color.White)
+                }
+                .width(80)
+                .height('100%')
+                .backgroundColor('#FF6B35')
+                .onClick(() => {
+                  const cityName = this.selectedCityForDistrict?.name || ''
+                  this.toggleFavorite(cityName)
+                  animateTo({ duration: 200 }, () => {
+                    this.swipeOffsets.set(cityName, 0)
+                  })
+                })
+              }
+              .height('100%')
+              
+              // 主内容层
+              Row() {
+                // 市级图标
+                Image($r('app.media.icon_location'))
+                  .width(18)
+                  .height(18)
+                  .fillColor(this.pollenThemeColor)
+                  .margin({ right: 12 })
+                
+                // 市级名称
+                Column() {
+                  Text(`整个${this.selectedCityForDistrict.name}`)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor($r('app.color.text_primary'))
+                  
+                  Text('查看市级整体数据')
+                    .fontSize(12)
+                    .fontColor($r('app.color.text_secondary'))
+                    .margin({ top: 2 })
+                }
+                .alignItems(HorizontalAlign.Start)
 
-          // 花粉等级颜色指示
-          if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
-            Circle()
-              .width(8)
-              .height(8)
-              .fill(this.getPollenColor(city.pollenLevel))
-              .margin({ top: 4 })
+                Blank()
+
+                // 箭头图标
+                Image($r('app.media.icon_chevron_right'))
+                  .width(16)
+                  .height(16)
+                  .fillColor(this.pollenThemeColor)
+              }
+              .width('100%')
+              .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+              .backgroundColor($r('app.color.card_background'))
+              .borderRadius(8)
+              .translate({ x: this.swipeOffsets.get(this.selectedCityForDistrict.name) ?? 0 })
+              .gesture(
+                // 【优化3】手势方向限制（Horizontal，避免与弹窗纵向拖拽冲突）
+                PanGesture({ direction: PanDirection.Horizontal })
+                  .onActionStart((event: GestureEvent) => {
+                    this.swipeStartTime = Date.now()
+                    this.isSwipeGesture = false
+                  })
+                  .onActionUpdate((event: GestureEvent) => {
+                    if (Math.abs(event.offsetX) > 10) {
+                      this.isSwipeGesture = true
+                    }
+                    const cityName = this.selectedCityForDistrict?.name || ''
+                    const currentOffset = this.swipeOffsets.get(cityName) ?? 0
+                    const maxSwipe = -80
+                    const newOffset = Math.max(maxSwipe, Math.min(0, currentOffset + event.offsetX))
+                    const now = Date.now()
+                    this.pendingOffset.set(cityName, newOffset)
+                    if (now - this.lastUpdateTime >= 16) {
+                      this.lastUpdateTime = now
+                      this.swipeOffsets.set(cityName, newOffset)
+                    }
+                  })
+                  .onActionEnd((event: GestureEvent) => {
+                    const cityName = this.selectedCityForDistrict?.name || ''
+                    const finalOffset = this.pendingOffset.get(cityName) ?? this.swipeOffsets.get(cityName) ?? 0
+                    if (this.pendingOffset.has(cityName)) {
+                      this.swipeOffsets.set(cityName, finalOffset)
+                      this.pendingOffset.delete(cityName)
+                    }
+                    const velocity = event.velocityX
+                    const threshold = -40
+                    if (velocity < -800 || finalOffset < threshold) {
+                      animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                        this.swipeOffsets.set(cityName, -80)
+                      })
+                    } else {
+                      animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                        this.swipeOffsets.set(cityName, 0)
+                      })
+                    }
+                  })
+              )
+              .onClick(() => {
+                if (this.isSwipeGesture) {
+                  this.isSwipeGesture = false
+                  return
+                }
+                const cityName = this.selectedCityForDistrict?.name || ''
+                const currentOffset = this.swipeOffsets.get(cityName) ?? 0
+                if (currentOffset < -10) {
+                  animateTo({ duration: 200 }, () => {
+                    this.swipeOffsets.set(cityName, 0)
+                  })
+                } else {
+                  this.selectCityOrDistrict(cityName, null)
+                }
+              })
+            }
+            .width('100%')
+            .height(56)
+            .margin({ left: 12, right: 12, top: 8, bottom: 4 })
           }
+          .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
+          
+          // 分割线和区县列表（只在有区县时显示）
+          if (this.selectedCityForDistrict.districts && this.selectedCityForDistrict.districts.length > 0) {
+            // 分割线
+            ListItem() {
+              Row() {
+                Text('或选择具体区县')
+                  .fontSize(12)
+                  .fontColor($r('app.color.text_secondary'))
+              }
+              .width('100%')
+              .padding({ left: 20, top: 12, bottom: 8 })
+            }
+            
+            // 区县列表（支持手势）
+            ForEach(this.selectedCityForDistrict.districts, (district: DistrictItem, index: number) => {
+            ListItem() {
+              Stack({ alignContent: Alignment.End }) {
+                // 背景层：操作按钮
+                Row() {
+                  Button({ type: ButtonType.Normal }) {
+                    Text('收藏')
+                      .fontSize(14)
+                      .fontColor(Color.White)
+                  }
+                  .width(80)
+                  .height('100%')
+                  .backgroundColor('#FF6B35')
+                  .onClick(() => {
+                    const cityName = this.selectedCityForDistrict?.name || ''
+                    const districtFullName = `${cityName} - ${district.name}`
+                    this.toggleFavorite(districtFullName)
+                    animateTo({ duration: 200 }, () => {
+                      this.swipeOffsets.set(district.name, 0)
+                    })
+                  })
+                }
+                .height('100%')
+                
+                // 主内容层
+                Row() {
+                  // 区县名称
+                  Column() {
+                    Text(district.name)
+                      .fontSize(16)
+                      .fontColor($r('app.color.text_primary'))
+                    
+                    // 坐标信息（调试用）
+                    if (district.location) {
+                      Text(`${district.location.lat.toFixed(4)}, ${district.location.lng.toFixed(4)}`)
+                        .fontSize(11)
+                        .fontColor($r('app.color.text_secondary'))
+                        .margin({ top: 2 })
+                    }
+                  }
+                  .alignItems(HorizontalAlign.Start)
+
+                  Blank()
+
+                  // 箭头图标
+                  Image($r('app.media.icon_chevron_right'))
+                    .width(16)
+                    .height(16)
+                    .fillColor(this.pollenThemeColor)
+                }
+                .width('100%')
+                .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+                .backgroundColor($r('app.color.page_background'))
+                .translate({ x: this.swipeOffsets.get(district.name) ?? 0 })
+                .gesture(
+                  // 【优化3】手势方向限制（Horizontal，避免与弹窗纵向拖拽冲突）
+                  PanGesture({ direction: PanDirection.Horizontal })
+                    .onActionStart((event: GestureEvent) => {
+                      this.swipeStartTime = Date.now()
+                      this.isSwipeGesture = false
+                    })
+                    .onActionUpdate((event: GestureEvent) => {
+                      if (Math.abs(event.offsetX) > 10) {
+                        this.isSwipeGesture = true
+                      }
+                      const currentOffset = this.swipeOffsets.get(district.name) ?? 0
+                      const maxSwipe = -80
+                      const newOffset = Math.max(maxSwipe, Math.min(0, currentOffset + event.offsetX))
+                      const now = Date.now()
+                      this.pendingOffset.set(district.name, newOffset)
+                      if (now - this.lastUpdateTime >= 16) {
+                        this.lastUpdateTime = now
+                        this.swipeOffsets.set(district.name, newOffset)
+                      }
+                    })
+                    .onActionEnd((event: GestureEvent) => {
+                      const finalOffset = this.pendingOffset.get(district.name) ?? this.swipeOffsets.get(district.name) ?? 0
+                      if (this.pendingOffset.has(district.name)) {
+                        this.swipeOffsets.set(district.name, finalOffset)
+                        this.pendingOffset.delete(district.name)
+                      }
+                      const velocity = event.velocityX
+                      const threshold = -40
+                      if (velocity < -800 || finalOffset < threshold) {
+                        animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                          this.swipeOffsets.set(district.name, -80)
+                        })
+                      } else {
+                        animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                          this.swipeOffsets.set(district.name, 0)
+                        })
+                      }
+                    })
+                )
+                .onClick(() => {
+                  if (this.isSwipeGesture) {
+                    this.isSwipeGesture = false
+                    return
+                  }
+                  const currentOffset = this.swipeOffsets.get(district.name) ?? 0
+                  if (currentOffset < -10) {
+                    animateTo({ duration: 200 }, () => {
+                      this.swipeOffsets.set(district.name, 0)
+                    })
+                  } else {
+                    const cityName = this.selectedCityForDistrict?.name || ''
+                    this.selectCityOrDistrict(cityName, district.name)
+                  }
+                })
+              }
+              .width('100%')
+              .height(56)
+            }
+            .transition(TransitionEffect.OPACITY.animation({ duration: 200, delay: (index + 1) * 30 }))
+          }, (district: DistrictItem) => district.name)
+          }  // 结束 if (this.selectedCityForDistrict.districts && ...)
         }
-        .alignItems(HorizontalAlign.End)
+        .width('100%')
+        .divider({
+          strokeWidth: 0.5,
+          color: '#E0E0E0',
+          startMargin: 20,
+          endMargin: 20
+        })
       }
-      .width('100%')
-      .height(50)
-      .padding({ left: 16, right: 16 })
-      .backgroundColor($r('app.color.page_background'))
-      .translate({ x: this.swipeOffsets.get(city.name) ?? 0 })
-      .gesture(
-        PanGesture({ direction: PanDirection.Left | PanDirection.Right })
-          .onActionUpdate((event: GestureEvent) => {
-            const currentOffset = this.swipeOffsets.get(city.name) ?? 0
-            const maxSwipe = city.isFavorite && !city.isTop ? -140 : -80
-            const newOffset = Math.max(maxSwipe, Math.min(0, currentOffset + event.offsetX))
 
-            // 节流优化：限制更新频率为 60fps (约 16ms)
-            const now = Date.now()
-            this.pendingOffset.set(city.name, newOffset)
-
-            if (now - this.lastUpdateTime >= 16) {
-              this.lastUpdateTime = now
-              this.swipeOffsets.set(city.name, newOffset)
-            }
-          })
-          .onActionEnd((event: GestureEvent) => {
-            // 使用待更新的最终值（如果存在）
-            const finalOffset = this.pendingOffset.get(city.name) ?? this.swipeOffsets.get(city.name) ?? 0
-            if (this.pendingOffset.has(city.name)) {
-              this.swipeOffsets.set(city.name, finalOffset)
-              this.pendingOffset.delete(city.name)
-            }
-
-            const velocity = event.velocityX
-            const currentOffset = finalOffset
-            const threshold = city.isFavorite && !city.isTop ? -70 : -40
-
-            // 判断是否展开
-            if (velocity < -800 || currentOffset < threshold) {
-              animateTo({ duration: 200, curve: Curve.Sharp }, () => {
-                this.swipeOffsets.set(city.name, city.isFavorite && !city.isTop ? -140 : -80)
-              })
-            } else {
-              animateTo({ duration: 200, curve: Curve.Sharp }, () => {
-                this.swipeOffsets.set(city.name, 0)
-              })
-            }
-          })
-      )
-      .onClick(() => {
-        // 如果已展开，先收起
-        const currentOffset = this.swipeOffsets.get(city.name) ?? 0
-        if (currentOffset < -10) {
-          animateTo({ duration: 200 }, () => {
-            this.swipeOffsets.set(city.name, 0)
-          })
-        } else {
-          this.selectCity(city.name)
-        }
-      })
+      // 取消按钮
+      Button('取消')
+        .width('90%')
+        .margin({ top: 16, bottom: 16 })
+        .backgroundColor('#F5F5F5')
+        .fontColor($r('app.color.text_primary'))
+        .onClick(() => {
+          this.showDistrictDialog = false
+          this.selectedCityForDistrict = null
+        })
     }
     .width('100%')
-    .height(50)
-    // P1优化: 使用 scale 替代 opacity+translate 复合动画
+    .padding({ top: 8 })
+  }
+
+  @Builder
+  CityItemComponent(city: CityItem) {
+    // 统一为目录样式，所有城市点击后都弹出三级菜单
+    Row() {
+      // 目录图标
+      Image($r('app.media.icon_chevron_right'))
+        .width(12)
+        .height(12)
+        .fillColor(this.pollenThemeColor as ResourceColor)
+
+      // 城市名称和花粉信息
+      Column() {
+        Text(city.name)
+          .fontSize(15)
+          .fontColor($r('app.color.text_primary'))
+        
+        // 花粉浓度预览（如果有数据）
+        if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
+          Row() {
+            Text(`花粉: ${city.pollenLevel}级`)
+              .fontSize(11)
+              .fontColor($r('app.color.text_secondary'))
+
+            if (city.pollenIndex !== undefined && city.pollenIndex > 0) {
+              Text(`(${city.pollenIndex})`)
+                .fontSize(11)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ left: 4 })
+            }
+          }
+          .margin({ top: 2 })
+        }
+      }
+      .alignItems(HorizontalAlign.Start)
+      .margin({ left: 12 })
+
+      Blank()
+
+      // 距离和花粉指示
+      Column() {
+        Text(`${city.distance}公里`)
+          .fontSize(14)
+          .fontColor($r('app.color.text_secondary'))
+        
+        // 花粉等级颜色指示
+        if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
+          Circle()
+            .width(8)
+            .height(8)
+            .fill(this.getPollenColor(city.pollenLevel))
+            .margin({ top: 4 })
+        }
+      }
+      .alignItems(HorizontalAlign.End)
+      
+      // 右箭头提示
+      Image($r('app.media.icon_chevron_right'))
+        .width(16)
+        .height(16)
+        .fillColor($r('app.color.text_secondary'))
+        .margin({ left: 8 })
+    }
+    .width('100%')
+    .height(60)
+    .padding({ left: 16, right: 16 })
+    .backgroundColor($r('app.color.page_background'))
+    .onClick(() => {
+      // 统一打开三级菜单（城市选择弹窗）
+      console.info(`[RegionView] 点击城市: ${city.name}，打开选择弹窗`)
+      // 提取纯城市名：去除省份前缀（例如："安徽省, 合肥市" → "合肥市"）
+      const pureCityName = city.name.includes(',') ? city.name.split(',')[1].trim() : city.name
+      console.info(`[RegionView] 提取纯城市名: ${pureCityName}`)
+      this.selectCity(pureCityName)
+    })
+    // 入场动画
     .scale({
       x: this.shouldAnimate(0) ? (this.isAnimating ? 1 : 0.95) : 1,
       y: this.shouldAnimate(0) ? (this.isAnimating ? 1 : 0.95) : 1
     })
     .animation({
-      duration: 240,  // 缩短时长
-      delay: this.firstLoad ? 0 : 0,  // 减少延迟
+      duration: 240,
+      delay: this.firstLoad ? 0 : 0,
       curve: Curve.EaseOut,
       iterations: 1,
       playMode: PlayMode.Normal
@@ -948,6 +1154,7 @@ export struct RegionView {
           .padding({ left: 16, right: 16 })
           .margin({ left: 16, right: 16 })
           .onClick(() => {
+            // actualLocationCity 已经是纯城市名，直接使用
             this.selectCity(this.actualLocationCity)
           })
         }
@@ -973,6 +1180,7 @@ export struct RegionView {
               .padding({ left: 16, right: 16, top: 8, bottom: 8 })
               .margin({ right: 12, bottom: 12 })
               .onClick(() => {
+                // 热门城市列表中已经是纯城市名，直接使用
                 this.selectCity(city)
               })
               // 入场动画（性能优化）
@@ -1119,11 +1327,94 @@ export struct RegionView {
         this.stopPollenDataUpdate();
       }
     })
+    // ====== 区县选择弹窗 ======
+    .bindSheet($$this.showDistrictDialog, this.DistrictDialog(), {
+      // 【优化2】弹窗高度自适应（有区县70%，无区县30%）
+      height: (this.selectedCityForDistrict?.districts?.length || 0) > 0 ? '70%' : '30%',
+      showClose: true,
+      title: {
+        title: `请选择${this.selectedCityForDistrict?.name || ''}的区县`,
+        subtitle: `共 ${this.selectedCityForDistrict?.districts?.length || 0} 个区县`
+      },
+      // 【优化4】弹窗动画优化（200ms秒开）
+      enableOutsideInteractive: false,
+      backgroundColor: $r('app.color.card_background'),  // 🌗 支持深色模式
+      onDisappear: () => {
+        this.showDistrictDialog = false
+        this.selectedCityForDistrict = null
+      }
+    })
   }
 
-  // 选择城市处理函数
+  // 选择城市处理函数（支持区县选择）
   selectCity(cityName: string): void {
     console.info(`[RegionView] 选择城市: ${cityName}`)
+    console.info(`[RegionView] allCitiesData 长度: ${this.allCitiesData.length}`)
+    
+    // 🔍 调试：打印前10个城市名，检查格式
+    if (this.allCitiesData.length > 0) {
+      const names = this.allCitiesData.slice(0, 10).map(c => c.name).join(', ')
+      console.info(`[RegionView] 数据中的城市名（前10个）: ${names}`)
+      
+      // 检查是否存在完全匹配
+      const exactMatch = this.allCitiesData.find(city => city.name === cityName)
+      console.info(`[RegionView] 完全匹配 "${cityName}": ${exactMatch ? '找到' : '未找到'}`)
+    } else {
+      console.error(`[RegionView] ❌ allCitiesData 为空！数据未加载`)
+    }
+
+    // 统一三级菜单方案：所有城市都弹出三级菜单
+    const cityData = getCityWithDistricts(this.allCitiesData, cityName)
+    console.info(`[RegionView] getCityWithDistricts 返回: ${cityData ? '有数据' : '无数据'}`)
+    
+    if (cityData) {
+      // 有数据就弹窗（无论是否有区县）
+      const districtCount = cityData.districts?.length || 0
+      console.info(`[RegionView] 城市 ${cityName} 数据加载成功，区县数量: ${districtCount}，弹出三级菜单`)
+      this.selectedCityForDistrict = cityData
+      this.showDistrictDialog = true
+
+      // 【优化1】无区县城市自动选中（200ms延迟+震动反馈）
+      if (!cityData.districts || cityData.districts.length === 0) {
+        console.info(`[RegionView] 无区县城市，200ms后自动选中`)
+        setTimeout(() => {
+          this.selectCityOrDistrict(cityData.name, null)
+          this.showDistrictDialog = false
+          // 震动反馈
+          if (this.vibrationEnabled) {
+            try {
+              vibrator.startVibration({
+                type: 'time',
+                duration: 30
+              }, {
+                id: 0,
+                usage: 'touch'
+              })
+            } catch (err) {
+              console.warn('[RegionView] 震动反馈失败')
+            }
+          }
+        }, 200)
+      }
+    } else {
+      // ❌ 数据缺失：不应该直接定位，应该提示错误
+      console.error(`[RegionView] 城市 ${cityName} 数据缺失，无法弹出三级菜单`)
+      
+      // 弹出错误提示
+      this.getUIContext().getPromptAction().showToast({
+        message: `${cityName} 数据暂未加载，请稍后重试`,
+        duration: 2000
+      })
+      
+      // 不执行任何定位操作！二级菜单的唯一功能就是：点击展开三级菜单
+      // 如果数据缺失，就无法展开，不应该有其他行为
+    }
+  }
+
+  // 选择城市或区县（统一处理）
+  selectCityOrDistrict(cityName: string, districtName: string | null): void {
+    const displayName = districtName ? `${cityName} - ${districtName}` : cityName
+    console.info(`[RegionView] 最终选择: ${displayName}`)
 
     // 1. 震动反馈（30ms 短震）
     if (this.vibrationEnabled) {
@@ -1142,29 +1433,58 @@ export struct RegionView {
 
     // 2. Toast 提示
     this.getUIContext().getPromptAction().showToast({
-      message: `已切换到 ${cityName}`,
+      message: `已选择 ${displayName}`,
       duration: 1500
     })
 
-    // 3. 更新全局存储的城市信息
-    AppStorage.SetOrCreate<string>('currentCity', cityName)
-    this.currentCity = cityName
+    // 3. 获取坐标
+    let coords: CityCoordinate | undefined = undefined
+    
+    if (districtName) {
+      // 从区县数据中获取坐标
+      const cityData = getCityWithDistricts(this.allCitiesData, cityName)
+      if (cityData && cityData.districts) {
+        const district = cityData.districts.find(d => d.name === districtName)
+        if (district && district.location) {
+          coords = { lat: district.location.lat, lng: district.location.lng }
+          console.info(`[RegionView] 区县坐标: ${coords.lat}, ${coords.lng}`)
+        }
+      }
+    } else {
+      // 从城市坐标映射表获取
+      coords = cityCoordinates[cityName]
+      // 如果映射表没有，尝试从完整数据获取
+      if (!coords) {
+        const cityData = getCityWithDistricts(this.allCitiesData, cityName)
+        if (cityData && cityData.location) {
+          coords = { lat: cityData.location.lat, lng: cityData.location.lng }
+          console.info(`[RegionView] 从完整数据获取城市坐标: ${coords.lat}, ${coords.lng}`)
+        }
+      }
+    }
 
-    // 获取城市坐标（使用全局常量）
-    const coords = cityCoordinates[cityName]
+    // 4. 更新全局存储
+    AppStorage.SetOrCreate<string>('currentCity', displayName)
+    this.currentCity = displayName
+
     if (coords) {
       AppStorage.SetOrCreate<number>('latitude', coords.lat)
       AppStorage.SetOrCreate<number>('longitude', coords.lng)
-      console.info(`[RegionView] 城市坐标: ${coords.lat}, ${coords.lng}`)
+      console.info(`[RegionView] 最终坐标: ${coords.lat}, ${coords.lng}`)
     } else {
-      console.warn(`[RegionView] 未找到城市 ${cityName} 的坐标，使用默认值`)
+      console.warn(`[RegionView] 未找到 ${displayName} 的坐标，使用默认值`)
       AppStorage.SetOrCreate<number>('latitude', 23.1291)
       AppStorage.SetOrCreate<number>('longitude', 113.2644)
     }
 
-    // 4. 跳转到首页（Tab 0）并刷新数据
-    AppStorage.SetOrCreate<number>('selectedTabIndex', 0)
-    console.info(`[RegionView] 已切换到城市: ${cityName}，跳转首页`)
+    // 5. 关闭弹窗
+    this.showDistrictDialog = false
+    this.selectedCityForDistrict = null
+
+    // 6. 【暂不实现】跳转到首页（Tab 0）并刷新数据
+    // TODO: 后续如需恢复此功能，取消注释以下代码
+    // AppStorage.SetOrCreate<number>('selectedTabIndex', 0)
+    console.info(`[RegionView] 已选择: ${displayName}，坐标已保存（暂不跳转首页）`)
   }
 
   // 启动定时更新花粉数据
