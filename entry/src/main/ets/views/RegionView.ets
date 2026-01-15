@@ -81,7 +81,13 @@ export struct RegionView {
   @StorageLink('safeBottom') safeBottom: number = 28
   @StorageLink('vibrationEnabled') vibrationEnabled: boolean = false  // 震动反馈开关
   @StorageLink('pollenThemeColor') pollenThemeColor: string = '#4CAF50'  // 花粉主题色
+  
+  // 免费版收藏上限，后续可与会员体系打通
+  private readonly MAX_FREE_FAVORITES: number = 4
 
+  // 当前处于滑动展开状态的 key（城市或区县）
+  private currentSwipeKey: string = ''
+  
   private locationService: LocationService = LocationService.getInstance()
 
   // 滚动控制器
@@ -93,8 +99,11 @@ export struct RegionView {
   // 最后一次更新时间
   private lastPollenUpdateTime: number = 0
 
-  // 收藏的城市列表
+  // 收藏的城市列表（用于“我的收藏”Tab）
   @State favoriteCities: string[] = []
+
+  // 热门/收藏 Tab 当前索引：0=热门城市，1=我的收藏
+  @State hotTabIndex: number = 0
 
   // 热门城市列表
   @State hotCities: string[] = ['北京市', '上海市', '广州市', '深圳市', '杭州市', '成都市', '武汉市', '重庆市']
@@ -416,16 +425,43 @@ export struct RegionView {
     console.info(`[RegionView] 已完成 ${this.cityList.length} 个城市的花粉数据加载`)
   }
 
-  // 切换城市收藏状态
-  toggleFavorite(cityName: string): void {
-    // 查找索引
+  // 切换城市/区县收藏状态
+  toggleFavorite(displayName: string): void {
+    if (!displayName || displayName.trim() === '') {
+      return
+    }
+
+    // 1. 查找是否命中城市列表（支持名称包含关系，例如“海南省, 海口市”与“海口市”）
     let foundIndex = -1
     for (let j = 0; j < this.cityList.length; j++) {
-      if (this.cityList[j].name === cityName) {
+      const name = this.cityList[j].name
+      if (name === displayName || name.indexOf(displayName) >= 0 || displayName.indexOf(name) >= 0) {
         foundIndex = j
         break
       }
     }
+
+    // 2. 当前收藏状态
+    let currentlyFavorite = false
+    if (foundIndex >= 0) {
+      currentlyFavorite = this.cityList[foundIndex].isFavorite
+    } else {
+      currentlyFavorite = this.favoriteCities.includes(displayName)
+    }
+    const nextFavorite = !currentlyFavorite
+
+    // 2.5 免费版收藏数量限制：新增且已达上限时提示并返回
+    if (nextFavorite && !currentlyFavorite) {
+      if (this.favoriteCities.length >= this.MAX_FREE_FAVORITES) {
+        this.getUIContext().getPromptAction().showToast({
+          message: `抱歉，当前最多仅支持收藏 ${this.MAX_FREE_FAVORITES} 项`,
+          duration: 2000
+        })
+        return
+      }
+    }
+
+    // 3. 更新城市列表（如果命中城市）
     if (foundIndex >= 0) {
       // 创建新数组以触发 UI 刷新
       const newList: CityItem[] = []
@@ -436,8 +472,8 @@ export struct RegionView {
       const updatedCity: CityItem = {
         name: city.name,
         distance: city.distance,
-        isFavorite: !city.isFavorite,
-        isTop: city.isFavorite ? false : city.isTop, // 取消收藏时同时取消置顶
+        isFavorite: nextFavorite,
+        isTop: nextFavorite ? city.isTop : false, // 取消收藏时同时取消置顶
         province: city.province,
         pinyin: city.pinyin,
         pinyinInitial: city.pinyinInitial,
@@ -447,6 +483,48 @@ export struct RegionView {
       newList[foundIndex] = updatedCity
       this.cityList = newList
     }
+
+    // 4. 更新收藏名称列表（用于“我的收藏”Tab 和持久化）
+    const indexInFavorites = this.favoriteCities.indexOf(displayName)
+    const newFavorites: string[] = []
+    for (let i = 0; i < this.favoriteCities.length; i++) {
+      newFavorites.push(this.favoriteCities[i])
+    }
+
+    if (nextFavorite) {
+      if (indexInFavorites < 0) {
+        newFavorites.push(displayName)
+      }
+    } else {
+      if (indexInFavorites >= 0) {
+        newFavorites.splice(indexInFavorites, 1)
+      }
+    }
+    this.favoriteCities = newFavorites
+
+    // 持久化到全局存储，便于下次启动恢复
+    AppStorage.SetOrCreate<string[]>('favoriteCities', newFavorites)
+
+    // 轻微震动反馈
+    if (this.vibrationEnabled) {
+      try {
+        vibrator.startVibration({
+          type: 'time',
+          duration: 30
+        }, {
+          id: 0,
+          usage: 'touch'
+        })
+      } catch (err) {
+        console.warn('[RegionView] 收藏震动反馈失败')
+      }
+    }
+
+    // 视觉提示：收藏/取消收藏提示语
+    this.getUIContext().getPromptAction().showToast({
+      message: nextFavorite ? `已加入收藏：${displayName}` : `已取消收藏：${displayName}`,
+      duration: 1200
+    })
   }
 
   // 置顶城市
@@ -640,15 +718,22 @@ export struct RegionView {
       console.info(`[RegionView] 使用已存储城市: ${storedCity}`)
     }
 
+    // 1.5 从 AppStorage 读取收藏列表
+    const storedFavorites = AppStorage.Get<string[]>('favoriteCities')
+    if (storedFavorites && Array.isArray(storedFavorites)) {
+      this.favoriteCities = storedFavorites
+    }
+
     // 2. 初始化城市数据（补充拼音和省份信息）
     const updatedCityList: CityItem[] = []
     for (let i = 0; i < this.cityList.length; i++) {
       const city = this.cityList[i]
+      const isFav = this.favoriteCities.includes(city.name)
       const updatedCity: CityItem = {
         name: city.name,
         distance: city.distance,
-        isFavorite: city.isFavorite,
-        isTop: city.isTop,
+        isFavorite: isFav,
+        isTop: isFav ? city.isTop : false,
         province: city.province || extractProvince(city.name),
         pinyin: city.pinyin || getCityPinyin(city.name),
         pinyinInitial: city.pinyinInitial || getPinyinInitial(city.name),
@@ -705,6 +790,9 @@ export struct RegionView {
   @Builder
   DistrictDialog() {
     Column() {
+      // 顶部安全距离
+      Blank().height(this.safeTop)
+
       // 区县列表（包含市级选项）
       // 统一显示，无论有无区县
       if (!this.selectedCityForDistrict) {
@@ -726,13 +814,13 @@ export struct RegionView {
               // 背景层：操作按钮
               Row() {
                 Button({ type: ButtonType.Normal }) {
-                  Text('收藏')
+                  Text(this.favoriteCities.includes(this.selectedCityForDistrict.name) ? '取消收藏' : '收藏')
                     .fontSize(14)
                     .fontColor(Color.White)
                 }
                 .width(80)
                 .height('100%')
-                .backgroundColor('#FF6B35')
+                .backgroundColor(this.favoriteCities.includes(this.selectedCityForDistrict.name) ? '#666666' : '#FF6B35')
                 .onClick(() => {
                   const cityName = this.selectedCityForDistrict?.name || ''
                   this.toggleFavorite(cityName)
@@ -754,7 +842,7 @@ export struct RegionView {
                 
                 // 市级名称
                 Column() {
-                  Text(`整个${this.selectedCityForDistrict.name}`)
+                  Text((this.favoriteCities.includes(this.selectedCityForDistrict.name) ? '★ ' : '') + `整个${this.selectedCityForDistrict.name}`)
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
                     .fontColor($r('app.color.text_primary'))
@@ -785,6 +873,15 @@ export struct RegionView {
                   .onActionStart((event: GestureEvent) => {
                     this.swipeStartTime = Date.now()
                     this.isSwipeGesture = false
+
+                    const cityName = this.selectedCityForDistrict?.name || ''
+                    if (this.currentSwipeKey && this.currentSwipeKey !== cityName) {
+                      // 收起之前展开的行
+                      animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                        this.swipeOffsets.set(this.currentSwipeKey, 0)
+                      })
+                    }
+                    this.currentSwipeKey = cityName
                   })
                   .onActionUpdate((event: GestureEvent) => {
                     if (Math.abs(event.offsetX) > 10) {
@@ -863,13 +960,13 @@ export struct RegionView {
                 // 背景层：操作按钮
                 Row() {
                   Button({ type: ButtonType.Normal }) {
-                    Text('收藏')
+                    Text(this.favoriteCities.includes(`${this.selectedCityForDistrict?.name || ''} - ${district.name}`) ? '取消收藏' : '收藏')
                       .fontSize(14)
                       .fontColor(Color.White)
                   }
                   .width(80)
                   .height('100%')
-                  .backgroundColor('#FF6B35')
+                  .backgroundColor(this.favoriteCities.includes(`${this.selectedCityForDistrict?.name || ''} - ${district.name}`) ? '#666666' : '#FF6B35')
                   .onClick(() => {
                     const cityName = this.selectedCityForDistrict?.name || ''
                     const districtFullName = `${cityName} - ${district.name}`
@@ -885,16 +982,16 @@ export struct RegionView {
                 Row() {
                   // 区县名称
                   Column() {
-                    Text(district.name)
-                      .fontSize(16)
-                      .fontColor($r('app.color.text_primary'))
-                    
-                    // 坐标信息（调试用）
-                    if (district.location) {
-                      Text(`${district.location.lat.toFixed(4)}, ${district.location.lng.toFixed(4)}`)
-                        .fontSize(11)
-                        .fontColor($r('app.color.text_secondary'))
-                        .margin({ top: 2 })
+                    Row() {
+                      if (this.favoriteCities.includes(`${this.selectedCityForDistrict?.name || ''} - ${district.name}`)) {
+                        Text('★')
+                          .fontSize(14)
+                          .fontColor(this.pollenThemeColor as ResourceColor)
+                          .margin({ right: 4 })
+                      }
+                      Text(district.name)
+                        .fontSize(16)
+                        .fontColor($r('app.color.text_primary'))
                     }
                   }
                   .alignItems(HorizontalAlign.Start)
@@ -917,6 +1014,14 @@ export struct RegionView {
                     .onActionStart((event: GestureEvent) => {
                       this.swipeStartTime = Date.now()
                       this.isSwipeGesture = false
+
+                      const key = district.name
+                      if (this.currentSwipeKey && this.currentSwipeKey !== key) {
+                        animateTo({ duration: 200, curve: Curve.Sharp }, () => {
+                          this.swipeOffsets.set(this.currentSwipeKey, 0)
+                        })
+                      }
+                      this.currentSwipeKey = key
                     })
                     .onActionUpdate((event: GestureEvent) => {
                       if (Math.abs(event.offsetX) > 10) {
@@ -982,17 +1087,6 @@ export struct RegionView {
           endMargin: 20
         })
       }
-
-      // 取消按钮
-      Button('取消')
-        .width('90%')
-        .margin({ top: 16, bottom: 16 })
-        .backgroundColor('#F5F5F5')
-        .fontColor($r('app.color.text_primary'))
-        .onClick(() => {
-          this.showDistrictDialog = false
-          this.selectedCityForDistrict = null
-        })
     }
     .width('100%')
     .padding({ top: 8 })
@@ -1008,27 +1102,18 @@ export struct RegionView {
         .height(12)
         .fillColor(this.pollenThemeColor as ResourceColor)
 
-      // 城市名称和花粉信息
+      // 城市名称 + 收藏状态
       Column() {
-        Text(city.name)
-          .fontSize(15)
-          .fontColor($r('app.color.text_primary'))
-        
-        // 花粉浓度预览（如果有数据）
-        if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
-          Row() {
-            Text(`花粉: ${city.pollenLevel}级`)
-              .fontSize(11)
-              .fontColor($r('app.color.text_secondary'))
-
-            if (city.pollenIndex !== undefined && city.pollenIndex > 0) {
-              Text(`(${city.pollenIndex})`)
-                .fontSize(11)
-                .fontColor($r('app.color.text_secondary'))
-                .margin({ left: 4 })
-            }
+        Row() {
+          if (city.isFavorite) {
+            Text('★')
+              .fontSize(14)
+              .fontColor(this.pollenThemeColor as ResourceColor)
+              .margin({ right: 4 })
           }
-          .margin({ top: 2 })
+          Text(city.name)
+            .fontSize(15)
+            .fontColor($r('app.color.text_primary'))
         }
       }
       .alignItems(HorizontalAlign.Start)
@@ -1036,13 +1121,9 @@ export struct RegionView {
 
       Blank()
 
-      // 距离和花粉指示
+      // 花粉等级指示
       Column() {
-        Text(`${city.distance}公里`)
-          .fontSize(14)
-          .fontColor($r('app.color.text_secondary'))
-        
-        // 花粉等级颜色指示
+        // 仅用颜色小圆点表示花粉状态，具体数值以首页为准
         if (city.pollenLevel !== undefined && city.pollenLevel >= 0) {
           Circle()
             .width(8)
@@ -1161,40 +1242,102 @@ export struct RegionView {
         .margin({ bottom: 20 })
       }
 
-      // 热门城市
+      // 热门城市 / 我的收藏
       Column() {
-        Text('热门城市')
-          .fontSize(13)
-          .fontColor($r('app.color.text_secondary'))
-          .width('100%')
-          .padding({ left: 16, bottom: 8 })
+        // 顶部标签栏
+        Row() {
+          Text('热门城市')
+            .fontSize(13)
+            .fontColor(this.hotTabIndex === 0 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
+            .fontWeight(this.hotTabIndex === 0 ? FontWeight.Medium : FontWeight.Normal)
+            .onClick(() => {
+              this.hotTabIndex = 0
+            })
 
-        // 热门城市网格布局 - 使用 Flex 实现换行
-        Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(this.hotCities, (city: string, index: number) => {
-            Text(city)
-              .fontSize(14)
-              .fontColor($r('app.color.text_primary'))
-              .backgroundColor($r('app.color.card_background'))
-              .borderRadius(16)
-              .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-              .margin({ right: 12, bottom: 12 })
-              .onClick(() => {
-                // 热门城市列表中已经是纯城市名，直接使用
-                this.selectCity(city)
-              })
-              // 入场动画（性能优化）
-              .opacity(this.isAnimating ? 1 : 0)
-              .translate({ y: this.isAnimating ? 0 : 30 })
-              .animation({
-                duration: 280,
-                delay: this.firstLoad ? (index * 30) : 0,
-                curve: Curve.EaseOut
-              })
-          })
+          Text('我的收藏')
+            .fontSize(13)
+            .fontColor(this.hotTabIndex === 1 ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
+            .fontWeight(this.hotTabIndex === 1 ? FontWeight.Medium : FontWeight.Normal)
+            .margin({ left: 24 })
+            .onClick(() => {
+              this.hotTabIndex = 1
+            })
+
+          Blank()
         }
         .width('100%')
-        .padding({ left: 16, right: 16 })
+        .padding({ left: 16, right: 16, bottom: 8 })
+
+        // 内容区域：左右滑动切换
+        Swiper() {
+          // Tab 0: 热门城市
+          // 热门城市网格布局 - 使用 Flex 实现换行
+          Flex({ wrap: FlexWrap.Wrap }) {
+            ForEach(this.hotCities, (city: string, index: number) => {
+              Text(city)
+                .fontSize(14)
+                .fontColor($r('app.color.text_primary'))
+                .backgroundColor($r('app.color.card_background'))
+                .borderRadius(16)
+                .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                .margin({ right: 12, bottom: 12 })
+                .onClick(() => {
+                  // 热门城市列表中已经是纯城市名，直接使用
+                  this.selectCity(city)
+                })
+                // 入场动画（性能优化）
+                .opacity(this.isAnimating ? 1 : 0)
+                .translate({ y: this.isAnimating ? 0 : 30 })
+                .animation({
+                  duration: 280,
+                  delay: this.firstLoad ? (index * 30) : 0,
+                  curve: Curve.EaseOut
+                })
+            })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
+
+          // Tab 1: 我的收藏
+          Flex({ wrap: FlexWrap.Wrap }) {
+            if (!this.favoriteCities || this.favoriteCities.length === 0) {
+              Text('还没有收藏城市，试试在列表中向左滑动添加收藏~')
+                .fontSize(12)
+                .fontColor($r('app.color.text_secondary'))
+                .margin({ left: 16, right: 16, top: 8, bottom: 8 })
+            } else {
+              ForEach(this.favoriteCities, (favName: string, index: number) => {
+                Row() {
+                  Text('★')
+                    .fontSize(14)
+                    .fontColor(this.pollenThemeColor as ResourceColor)
+                    .margin({ right: 4 })
+                  Text(favName)
+                    .fontSize(14)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .backgroundColor($r('app.color.card_background'))
+                .borderRadius(16)
+                .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                .margin({ right: 12, bottom: 12 })
+                .onClick(() => {
+                  // 点击收藏项时，默认以城市部分进行选择
+                  const parts = favName.split(' - ')
+                  const cityPart = parts[0]
+                  this.selectCity(cityPart)
+                })
+              })
+            }
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
+        }
+        .index(this.hotTabIndex)
+        .onChange((index: number) => {
+          this.hotTabIndex = index
+        })
+        .width('100%')
+        .height(128)
       }
       .margin({ bottom: 20 })
 

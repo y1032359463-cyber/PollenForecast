@@ -1,0 +1,9 @@
+{
+  "name": "fetchpollendata-v3",
+  "version": "1.0.0",
+  "main": "handler.js",
+  "description": "华为云函数：定时抓取敏舒花粉数据",
+  "engines": {
+    "node": "16.x"
+  }
+}
