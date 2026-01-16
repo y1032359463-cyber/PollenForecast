@@ -9,6 +9,7 @@ import { vibrator } from '@kit.SensorServiceKit'
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { ApiVersionUtils } from '../utils/ApiVersionUtils'  // API 版本检测工具
 import { PollenDataSourceType, POLLEN_DATA_SOURCES, getDataSourceName, PollenDataSourceConfig } from '../model/PollenDataSource'
+import { SettingsPreferences } from '../utils/SettingsPreferences'
 
 @Entry
 @Component
@@ -176,6 +177,7 @@ struct GeneralSettingsPage {
               .switchPointColor(Color.White)
               .onChange((isOn: boolean) => {
                 this.vibrationEnabled = isOn
+                SettingsPreferences.setVibrationEnabled(this.vibrationEnabled)
                 console.info(`震动反馈: ${isOn ? '开启' : '关闭'}`)
                 // 开启时触发一次震动作为反馈
                 if (isOn) {
@@ -229,6 +231,7 @@ struct GeneralSettingsPage {
               .opacity(ApiVersionUtils.supportsGripDetection() ? 1 : 0.5)
               .onChange((isOn: boolean) => {
                 this.gripDetectionEnabled = isOn
+                SettingsPreferences.setGripDetectionEnabled(this.gripDetectionEnabled)
                 console.info(`智感握姿: ${isOn ? '开启' : '关闭'}`)
                 // 开启时触发震动反馈
                 if (isOn && this.vibrationEnabled) {
@@ -280,6 +283,7 @@ struct GeneralSettingsPage {
                 .padding({ left: 16, right: 16 })
                 .onClick(() => {
                   this.appearanceMode = index
+                  SettingsPreferences.setAppearanceMode(this.appearanceMode)
                   this.applyAppearanceMode(index)
                   this.triggerVibration()  // 选择时触发震动反馈
                 })
@@ -341,6 +345,7 @@ struct GeneralSettingsPage {
                 .padding({ left: 16, right: 16 })
                 .onClick(() => {
                   this.pollenDataSource = source.type
+                  SettingsPreferences.setPollenDataSource(this.pollenDataSource)
                   console.info(`数据源已切换为: ${source.name} (${source.type})`)
                   if (this.vibrationEnabled) {
                     this.triggerVibration()

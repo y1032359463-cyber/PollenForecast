@@ -5,6 +5,7 @@
 
 import { NotificationService } from '../utils/NotificationService'
 import { VibrationUtils } from '../utils/VibrationUtils'
+import { SettingsPreferences } from '../utils/SettingsPreferences'
 
 @Entry
 @Component
@@ -52,6 +53,7 @@ struct NotificationSettingsPage {
         
         // 保存到 AppStorage
         AppStorage.setOrCreate('dailyReportTime', this.dailyReportTime)
+        SettingsPreferences.setDailyReportTime(this.dailyReportTime)
         
         // 如果每日播报开关已开启，更新定时提醒
         if (this.dailyReportEnabled && this.notificationEnabled) {
@@ -143,7 +145,6 @@ struct NotificationSettingsPage {
                     // 再次检查权限
                     const granted = await this.notificationService.checkNotificationEnabled()
                     this.notificationEnabled = granted
-                    
                     if (!granted) {
                       this.getUIContext().getPromptAction().showToast({
                         message: '请在系统设置中开启通知权限',
@@ -160,16 +161,14 @@ struct NotificationSettingsPage {
                   await this.notificationService.cancelAllNotifications()
                   // 取消定时提醒
                   await this.notificationService.cancelDailyReminder()
-                  
                   this.getUIContext().getPromptAction().showToast({
                     message: '通知已关闭',
                     duration: 1500
                   })
                 }
-                
                 // 保存到 AppStorage
                 AppStorage.setOrCreate('notificationEnabled', this.notificationEnabled)
-                
+                SettingsPreferences.setNotificationEnabled(this.notificationEnabled)
                 console.info(`通知总开关: ${this.notificationEnabled ? '开启' : '关闭'}`)
               })
           }
@@ -203,6 +202,7 @@ struct NotificationSettingsPage {
                 .onChange((isOn: boolean) => {
                   VibrationUtils.triggerLight()
                   this.pollenAlertEnabled = isOn
+                  SettingsPreferences.setPollenAlertEnabled(this.pollenAlertEnabled)
                   console.info(`花粉预警: ${isOn ? '开启' : '关闭'}`)
                 })
             }
@@ -253,6 +253,7 @@ struct NotificationSettingsPage {
                   
                   // 保存到 AppStorage
                   AppStorage.setOrCreate('dailyReportEnabled', isOn)
+                  SettingsPreferences.setDailyReportEnabled(this.dailyReportEnabled)
                   
                   if (isOn && this.notificationEnabled) {
                     // 开启：设置定时提醒

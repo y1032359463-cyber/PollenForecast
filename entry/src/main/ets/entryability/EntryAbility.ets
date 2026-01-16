@@ -5,6 +5,7 @@ import { LocationService } from '../service/LocationService';
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
 import { NotificationService } from '../utils/NotificationService';
 import { loadPinyinMap } from '../utils/CityUtils';
+import { SettingsPreferences } from '../utils/SettingsPreferences';
 
 const DOMAIN = 0x0000;
 
@@ -21,11 +22,30 @@ export default class EntryAbility extends UIAbility {
     console.info('🟡 [EntryAbility] onCreate 调用');
 
     try {
+      // 初始设置为系统模式（后续会被 Preferences 恢复的值覆盖）
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
       const errorInfo = err as ErrorInfo
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(errorInfo));
     }
+
+    // 使用 Preferences 兜底恢复设置（避免 PersistentStorage 失效时丢失用户配置）
+    (async () => {
+      try {
+        await SettingsPreferences.init(this.context);
+        await SettingsPreferences.restoreSettingsToAppStorage();
+        hilog.info(DOMAIN, 'testTag', '设置已从 Preferences 恢复到 AppStorage');
+        
+        // 恢复后立即应用外观模式
+        const savedAppearanceMode = AppStorage.get<number>('appearanceMode');
+        if (savedAppearanceMode !== undefined) {
+          this.applySavedAppearanceMode(savedAppearanceMode);
+        }
+      } catch (restoreErr) {
+        const restoreInfo = restoreErr as ErrorInfo;
+        hilog.error(DOMAIN, 'testTag', '恢复设置失败: %{public}s', JSON.stringify(restoreInfo));
+      }
+    })();
 
     // 0. 初始化持久化存储
     PersistentStorage.persistProp('currentCity', '北京市');
@@ -36,6 +56,12 @@ export default class EntryAbility extends UIAbility {
     PersistentStorage.persistProp('favoriteCities', []);
     PersistentStorage.persistProp('vibrationEnabled', true);
     PersistentStorage.persistProp('notificationEnabled', false);
+    PersistentStorage.persistProp('gripDetectionEnabled', false);
+    PersistentStorage.persistProp('appearanceMode', 0);
+    PersistentStorage.persistProp('pollenAlertEnabled', true);
+    PersistentStorage.persistProp('dailyReportEnabled', true);
+    PersistentStorage.persistProp('dailyReportTime', '08:00');
+    PersistentStorage.persistProp('dailyReminderTime', '08:00');
 
     // 1. 初始化共享数据
     // 注意：已持久化的属性（currentCity, currentAdcode, pollenDataSource 等）不要在这里 setOrCreate，否则会覆盖持久化的值
@@ -67,9 +93,15 @@ export default class EntryAbility extends UIAbility {
     if (!AppStorage.has('notificationEnabled')) {
       AppStorage.setOrCreate('notificationEnabled', false);
     }
-    AppStorage.setOrCreate('pollenAlertEnabled', true);
-    AppStorage.setOrCreate('dailyReportEnabled', true);
-    AppStorage.setOrCreate('dailyReportTime', '08:00');
+    if (!AppStorage.has('pollenAlertEnabled')) {
+      AppStorage.setOrCreate('pollenAlertEnabled', true);
+    }
+    if (!AppStorage.has('dailyReportEnabled')) {
+      AppStorage.setOrCreate('dailyReportEnabled', true);
+    }
+    if (!AppStorage.has('dailyReportTime')) {
+      AppStorage.setOrCreate('dailyReportTime', '08:00');
+    }
 
     // 设置 LocationService 的 context
     LocationService.getInstance().setContext(this.context);
@@ -196,6 +228,32 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       const errorInfo = err as ErrorInfo
       hilog.error(DOMAIN, 'testTag', '设置状态栏失败: %{public}s', JSON.stringify(errorInfo));
+    }
+  }
+
+  /**
+   * 应用保存的外观模式
+   */
+  private applySavedAppearanceMode(mode: number): void {
+    try {
+      let colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
+      if (mode === 1) {
+        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+      } else if (mode === 2) {
+        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+      }
+      
+      this.context.getApplicationContext().setColorMode(colorMode);
+      hilog.info(DOMAIN, 'testTag', '应用已保存的外观模式: %{public}d', mode);
+      
+      // 更新当前主题状态，确保 UI 响应
+      const finalColorMode = colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET 
+        ? this.context.config.colorMode 
+        : colorMode;
+      AppStorage.setOrCreate('currentColorMode', finalColorMode);
+    } catch (err) {
+      const errorInfo = err as ErrorInfo;
+      hilog.error(DOMAIN, 'testTag', '应用外观模式失败: %{public}s', JSON.stringify(errorInfo));
     }
   }
 

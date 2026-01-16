@@ -1,7 +1,7 @@
 # 花粉浓度播报 (PollenForecast)
 
 > **作用范围**: 本项目专属文档
-> **最后更新**: 2026-01-16 (和风天气数据源适配器 JSDoc 注释与单元测试完成)
+> **最后更新**: 2026-01-16 (设置持久化可靠性增强与外观模式修复完成)
 > **AI 维护者**: Qoder / Claude
 
 ---
@@ -39,6 +39,8 @@
 ## 🚨 当前状态概要（新窗口必读）
 
 ### ⚠️ 当前状态（2026-01-16 更新）
+
+**设置持久化可靠性增强** - 解决了 `PersistentStorage` 在某些真机环境下失效的问题，引入 `Preferences` API 实现了设置项的兜底持久化，并修复了外观模式重启丢失的逻辑 Bug ✅
 
 **智能搜索功能完成** - 实现了完整的拼音搜索功能，支持全中国3244个区域（省/直辖市34个、地级市369个、区县2841个）的拼音首字母搜索，支持 `bj`/`js`/`gz` 等快捷输入 ✨
 
@@ -101,6 +103,7 @@
 ### 📂 关键文件位置
 || 文件 | 用途 |
 ||------|------|
+|| `entry/src/main/ets/utils/SettingsPreferences.ets` | 设置持久化工具类（Preferences 兜底）✨ |
 || `entry/src/main/ets/utils/ReminderService.ets` | 代理提醒服务（2026-01-07 新增）✨ |
 || `entry/src/main/ets/utils/NotificationService.ets` | 通知服务（调用 ReminderService）|
 || `entry/src/main/ets/utils/ApiVersionUtils.ets` | API 版本检测 |
@@ -265,6 +268,11 @@ HarmonyOS SDK: 6.0.0 (API 20)
 ### 当前阶段: AppGallery审核准备
 
 #### 已完成 ✅
+|- [x] **设置持久化可靠性增强** (2026-01-16) ✨ P0
+  - ✅ 引入 Preferences API 替代/兜底不可靠的 PersistentStorage
+  - ✅ 修复外观模式杀进程后无法保持用户选择的问题
+  - ✅ 优化 EntryAbility 启动逻辑，确保配置恢复后立即应用主题
+  - **开发者**: Claude
 |- [x] **智能搜索功能完成** (2026-01-16) ✨ P0
   - ✅ 生成全中国3244个区域的拼音映射表（省/直辖市34个、地级市369个、区县2841个） **(GLM-4.7)**
   - ✅ 支持拼音首字母前缀匹配（如 `js` 可匹配 `金山区`） **(GLM-4.7)**
@@ -487,6 +495,7 @@ AIzaSyCqWhX-k3H5kONC2WV3DtcIs8PtkwdmMH8
 
 || 备份时间 | 版本 | 路径 | 大小 | 说明 |
 ||---------|------|------|------|------|
+|| 2026-01-16 18:30 | v1.1.0 | N/A | - | 设置持久化失效修复（Preferences 方案）✨ |
 || 2026-01-15 16:00 | v1.1.0 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.1.0_20260115_160000` | - | 收藏功能重构与版本升级后的备份✨ |
 || 2026-01-13 22:55 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260113_225500` | - | 三级菜单直辖市修复后的备份✨ |
 || 2026-01-10 17:11 | v1.0.2 | `C:\HarmonyOS_App_Plans\.claude\backup\PollenForecast_v1.0.2_20260110_171156` | 12.99 MB | 项目备份规则建立后的备份（已修复配置）✨ |
