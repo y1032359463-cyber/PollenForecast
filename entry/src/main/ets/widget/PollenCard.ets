@@ -51,8 +51,8 @@ export struct PollenCard {
       // 底部：风险等级胶囊
       Text(this.pollenLevel)
         .fontSize(14)
-        .fontColor('#FF9800')
-        .backgroundColor('#FFF3E0')
+        .fontColor('#1A1A1A') // 使用深色文字确保对比度
+        .backgroundColor(this.pollenLevel === '极高' ? '#F44336' : (this.pollenLevel === '中等' ? '#FFC107' : '#CDDC39'))
         .padding({ left: 16, right: 16, top: 6, bottom: 6 })
         .borderRadius(50)
         .position({ x: '50%', y: '85%' })

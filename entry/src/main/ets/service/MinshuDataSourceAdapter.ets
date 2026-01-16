@@ -230,16 +230,26 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
     cityName: string
   ): Promise<PollenForecastResponse | null> {
     try {
-      // 1. 获取 adcode（城市编码）
-      // 如果城市名包含 " - "，说明是区县级，提取区县名
+      // 1. 获取目标查询名称（处理区县级名称）
       let targetName = cityName
       if (cityName.includes(' - ')) {
         const parts = cityName.split(' - ')
         targetName = parts[1] || parts[0] // 使用区县名
-        console.info(`[MinshuAdapter] 检测到区县级，提取区县名: ${targetName}`)
+        console.info(`[MinshuAdapter] 检测到区县级，提取查询名: ${targetName}`)
       }
+
+      // 2. 获取 adcode（城市编码）
+      let adcode: string | null = null
       
-      const adcode = getAdcodeByCityName(targetName)
+      // 2.1 优先从 AppStorage 获取当前已保存的 adcode
+      const storedAdcode: string | undefined = AppStorage.get('currentAdcode') as string | undefined
+      if (storedAdcode) {
+        adcode = storedAdcode
+        console.info(`[MinshuAdapter] 使用存储的精确 adcode: ${adcode}`)
+      } else {
+        // 2.2 如果没有存储的 adcode，则尝试通过城市名转换
+        adcode = getAdcodeByCityName(targetName)
+      }
       
       if (!adcode) {
         console.warn(`[MinshuAdapter] 无法获取城市 ${cityName} (查询名: ${targetName}) 的 adcode`)
@@ -272,7 +282,9 @@ export class MinshuDataSourceAdapter implements IPollenDataSourceAdapter {
       }
 
       // 4. 解析响应
-      const resultStr = response.result as string
+      const resultStr = typeof response.result === 'string' ? response.result : JSON.stringify(response.result)
+      console.info(`[MinshuAdapter] 原始响应预览: ${resultStr.substring(0, 300)}${resultStr.length > 300 ? '...' : ''}`)
+      
       const minshuResponse: MinshuApiResponse = JSON.parse(resultStr)
 
       if (minshuResponse.code !== 0 || !minshuResponse.data) {

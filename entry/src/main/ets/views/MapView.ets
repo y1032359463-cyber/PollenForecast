@@ -111,10 +111,8 @@ export struct MapView {
       },
       // 地图样式
       mapType: mapCommon.MapType.STANDARD,
-      // 自定义样式路径（深色模式适配）
-      // stylePath: this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
-      //   ? 'common/map_dark.json'
-      //   : 'common/map_light.json',
+      // 夜间模式（深色模式适配）
+      dayNightMode: this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK ? mapCommon.DayNightMode.NIGHT : mapCommon.DayNightMode.DAY,
       // 限制缩放级别（城市范围）
       minZoom: 9,   // 最小缩放：可以看到周边城市
       maxZoom: 14   // 最大缩放：街道级别，不会太细节
@@ -306,22 +304,19 @@ export struct MapView {
     }
   }
 
-  // 监听主题变化（使用自定义样式文件实现深色模式）
+  // 监听主题变化（使用 Map Kit 内置的 dayNightMode 实现深色模式）
   onThemeChanged(): void {
-    console.info(`[MapView] 主题变化: ${this.currentColorMode}`)
+    const isDarkMode = this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+    console.info(`[MapView] 主题变化: ${this.currentColorMode}, 是否开启夜间模式: ${isDarkMode}`)
+    
     if (this.mapReady && this.mapController) {
       try {
-        // 使用自定义样式文件切换主题（需要先创建样式文件）
-        // const stylePath = this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
-        //   ? 'common/map_dark.json'
-        //   : 'common/map_light.json'
-        // this.mapController.setMapStylePath(stylePath)
-        // console.info(`[MapView] 地图样式已切换为: ${stylePath}`)
-
-        // TODO: 创建自定义样式文件后启用上述代码
-        console.info('[MapView] 地图深色模式暂未启用（需要自定义样式文件）')
+        // 使用 Map Kit 内置方法切换夜间模式
+        const mode = isDarkMode ? mapCommon.DayNightMode.NIGHT : mapCommon.DayNightMode.DAY
+        this.mapController.setDayNightMode(mode)
+        console.info(`[MapView] 地图夜间模式已切换为: ${mode === mapCommon.DayNightMode.NIGHT ? 'NIGHT' : 'DAY'}`)
       } catch (err) {
-        console.error(`[MapView] 切换地图样式失败: ${JSON.stringify(err)}`)
+        console.error(`[MapView] 切换地图夜间模式失败: ${JSON.stringify(err)}`)
       }
     }
   }
@@ -744,9 +739,7 @@ export struct MapView {
         Text(`花粉等级: ${this.pollenLevel}`)
           .fontSize(14)
           .fontColor($r('app.color.text_primary'))
-        Text(`(${this.pollenValue} 粒/km³)`)
-          .fontSize(13)
-          .fontColor($r('app.color.text_secondary'))
+        // 简化显示：移除数值，保持地图标注简洁
       }
       .width('100%')
 

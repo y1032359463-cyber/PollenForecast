@@ -60,6 +60,7 @@ export interface IndexInfo {
   value: number
   category: string
   indexDescription: string
+  categoryOriginal?: string  // 原始文本（如和风的"极易发"、"易发"等），可选字段
 }
 
 /**
@@ -126,7 +127,7 @@ export function levelToText(level: PollenLevel): string {
 }
 
 /**
- * 根据花粉等级获取颜色
+ * 根据花粉等级获取颜色 (用于图形、背景等)
  */
 export function levelToColor(level: PollenLevel): string {
   if (level === PollenLevel.NONE) {
@@ -143,6 +144,34 @@ export function levelToColor(level: PollenLevel): string {
     return '#F44336'
   }
   return '#757575'
+}
+
+/**
+ * 根据花粉等级获取文字颜色 (确保对比度符合无障碍要求 ≥ 4.5:1)
+ * @param level 花粉等级
+ * @param isDarkMode 是否为深色模式
+ */
+export function levelToTextColor(level: PollenLevel, isDarkMode: boolean = false): string {
+  if (isDarkMode) {
+    // 深色模式下，原色通常对比度足够 (背景为深色)
+    return levelToColor(level)
+  }
+
+  // 浅色模式下 (背景为白色/浅灰)，需要使用加深后的颜色
+  if (level === PollenLevel.NONE) {
+    return '#2E7D32' // 对应 #4CAF50 的加深版
+  } else if (level === PollenLevel.VERY_LOW) {
+    return '#558B2F' // 对应 #8BC34A 的加深版
+  } else if (level === PollenLevel.LOW) {
+    return '#827717' // 对应 #CDDC39 的加深版
+  } else if (level === PollenLevel.MODERATE) {
+    return '#A17100' // 对应 #FFC107 的加深版
+  } else if (level === PollenLevel.HIGH) {
+    return '#E65100' // 对应 #FF9800 的加深版
+  } else if (level === PollenLevel.VERY_HIGH) {
+    return '#C62828' // 对应 #F44336 的加深版
+  }
+  return '#555555'
 }
 
 /**

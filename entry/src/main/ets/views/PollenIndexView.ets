@@ -15,6 +15,7 @@ import {
   PollenLevel,
   levelToText,
   levelToColor,
+  levelToTextColor,
   formatDateShort,
   getMaxPollenFromDaily,
   getMaxPollenIndexFromDaily,
@@ -43,8 +44,12 @@ export struct PollenIndexView {
   // 长按预览状态
   @State previewVisible: boolean = false
   @State previewData: PreviewData = { title: '', value: '', desc: '', extra: '' }
+  // 和风数据源原始显示状态
+  @State pollenCategoryOriginal: string = ''  // 和风原始文本（如"极易发"、"易发"等）
+  @State hasOriginalCategory: boolean = false  // 是否有原始文本（和风数据源）
   @StorageLink('safeTop') safeTop: number = 44
   @StorageLink('safeBottom') safeBottom: number = 28
+  @StorageLink('pollenDataSource') @Watch('onDataSourceChange') dataSourceType: string = 'AUTO'
   @StorageLink('pollenThemeColor') pollenThemeColor: string = '#4CAF50'  // 花粉主题色
   @StorageLink('currentColorMode') currentColorMode: ConfigurationConstant.ColorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
 
@@ -181,6 +186,12 @@ export struct PollenIndexView {
     }
   }
 
+  // 数据源变化时重新加载数据
+  onDataSourceChange(): void {
+    console.info('[PollenIndexView] 数据源变化: ' + this.dataSourceType)
+    this.loadPollenData()
+  }
+
   // 加载花粉数据（优化：天气先返回，花粉静默刷新）
   async loadPollenData(): Promise<void> {
     this.isLoading = true
@@ -233,8 +244,25 @@ export struct PollenIndexView {
           this.pollenLevelEnum = getMaxPollenFromDaily(todayInfo)
           this.healthTips = getHealthRecommendationsFromDaily(todayInfo)
           
+          // 提取和风原始文本（如果有）
+          this.hasOriginalCategory = false
+          this.pollenCategoryOriginal = ''
+          if (todayInfo.pollenTypeInfo && todayInfo.pollenTypeInfo.length > 0) {
+            for (let i = 0; i < todayInfo.pollenTypeInfo.length; i++) {
+              const typeInfo = todayInfo.pollenTypeInfo[i]
+              if (typeInfo.indexInfo && typeInfo.indexInfo.categoryOriginal) {
+                this.hasOriginalCategory = true
+                this.pollenCategoryOriginal = typeInfo.indexInfo.categoryOriginal
+                console.info(`[PollenIndexView] 检测到和风原始文本: ${this.pollenCategoryOriginal}`)
+                break
+              }
+            }
+          }
+          
           // 更新全局主题色
+          const isDark = this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
           AppStorage.setOrCreate('pollenThemeColor', levelToColor(this.pollenLevelEnum))
+          AppStorage.setOrCreate('pollenThemeTextColor', levelToTextColor(this.pollenLevelEnum, isDark))
           
           // 判断是否有有效数据
           if (this.pollenValue > 0) {
@@ -462,15 +490,14 @@ export struct PollenIndexView {
         Blank()
         
         // 右侧：数据来源感谢信息
-        Text('感谢北京敏舒科技有限责任公司对数据的支持')
+        Text(this.getDataSourceThankYouText())
           .fontSize(10)
           .fontColor(this.getDataSourceTextColor())
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .opacity(0.8)
           .width('45%')  // 设置固定宽度，避免挤压城市名
           .textAlign(TextAlign.End)  // 右对齐
-          .accessibilityText('数据来源：感谢北京敏舒科技有限责任公司对数据的支持')
+          .accessibilityText(`数据来源：${this.getDataSourceThankYouText()}`)
       }
       .width('100%')
       .height(48)
@@ -522,21 +549,42 @@ export struct PollenIndexView {
           Row() {
             Text('☀️')
               .fontSize(24)
-            Text(this.pollenValue.toString())
-              .fontSize(48)
-              .fontColor($r('app.color.text_primary'))
-              .fontWeight(FontWeight.Bold)
-              .margin({ left: 4 })
+            // 和风数据源：显示原始等级文字
+            if (this.hasOriginalCategory) {
+              Text(this.pollenCategoryOriginal)
+                .fontSize(48)
+                .fontColor($r('app.color.text_primary'))
+                .fontWeight(FontWeight.Bold)
+                .margin({ left: 4 })
+            } else {
+              // 其他数据源：显示精确数值
+              Text(this.pollenValue.toString())
+                .fontSize(48)
+                .fontColor($r('app.color.text_primary'))
+                .fontWeight(FontWeight.Bold)
+                .margin({ left: 4 })
+            }
           }
 
-          Text('粒/km³')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ top: 4 })
+          // 单位/副标题
+          if (this.hasOriginalCategory) {
+            // 和风：显示模糊转换值
+            Text(`(约 ${this.pollenValue} 粒/km³)`)
+              .fontSize(14)
+              .fontColor($r('app.color.text_secondary'))
+              .margin({ top: 4 })
+          } else {
+            // 其他数据源：标准单位
+            Text('粒/km³')
+              .fontSize(14)
+              .fontColor($r('app.color.text_secondary'))
+              .margin({ top: 4 })
+          }
 
+          // 等级文字
           Text(this.pollenLevel)
             .fontSize(18)
-            .fontColor(this.getLevelColor())
+            .fontColor(levelToTextColor(this.pollenLevelEnum, this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK))
             .fontWeight(FontWeight.Medium)
             .margin({ top: 8 })
         }
@@ -592,7 +640,9 @@ export struct PollenIndexView {
             Column() {
               Text(tab)
                 .fontSize(14)
-                .fontColor(this.dataSwiperIndex === index ? this.pollenThemeColor : $r('app.color.text_secondary'))
+                .fontColor(this.dataSwiperIndex === index ? 
+                  AppStorage.get<string>('pollenThemeTextColor') || '#4CAF50' : 
+                  $r('app.color.text_secondary'))
                 .fontWeight(this.dataSwiperIndex === index ? FontWeight.Medium : FontWeight.Normal)
               
               // 下划线指示器
@@ -711,7 +761,9 @@ export struct PollenIndexView {
             Column() {
               Text(item.value.toString())
                 .fontSize(11)
-                .fontColor(item.value > 0 ? this.pollenThemeColor : '#808080')
+                .fontColor(item.value > 0 ? 
+                  levelToTextColor(this.pollenLevelEnum, this.currentColorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) : 
+                  '#666666')
                 .fontWeight(FontWeight.Medium)
                 .margin({ bottom: 4 })
               
@@ -1603,6 +1655,20 @@ export struct PollenIndexView {
     .backgroundColor($r('app.color.card_background'))
     .padding(16)
     .borderRadius(12)
+  }
+
+  // 获取数据来源感谢文字
+  private getDataSourceThankYouText(): string {
+    switch (this.dataSourceType) {
+      case 'GOOGLE':
+        return '数据由 Google Pollen API 提供'
+      case 'MINSHU':
+        return '感谢北京敏舒科技对数据的支持'
+      case 'QWEATHER':
+        return '数据由和风天气 QWeather 提供'
+      default:
+        return '感谢北京敏舒科技对数据的支持'
+    }
   }
 
   // 获取数据来源文本颜色（确保对比度 ≥ 4.1:1，符合华为无障碍要求）

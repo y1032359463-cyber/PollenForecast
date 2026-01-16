@@ -3,10 +3,23 @@
  * 提供拼音转换、省份提取、字母索引等功能
  */
 
+import resourceManager from '@ohos.resourceManager'
+import util from '@ohos.util'
+import { Context } from '@kit.AbilityKit'
+
 // 坐标接口
 export interface LocationCoordinate {
   lat: number  // 纬度
   lng: number  // 经度
+}
+
+// 拼音映射接口
+export interface PinyinMapItem {
+  name: string
+  pinyin: string
+  initial: string
+  adcode: string
+  level: string
 }
 
 // 城市数据接口（与 RegionView.ets 保持一致）
@@ -51,6 +64,9 @@ const PINYIN_MAP: Record<string, string> = {
   '成都': 'chengdu',
   '武汉': 'wuhan',
   '重庆': 'chongqing',
+  '西安': 'xian',
+  '南京': 'nanjing',
+  '天津': 'tianjin',
   '海口': 'haikou',
   '南宁': 'nanning',
   '贵阳': 'guiyang',
@@ -61,7 +77,6 @@ const PINYIN_MAP: Record<string, string> = {
   '福州': 'fuzhou',
   '南充': 'nanchong',
   '合肥': 'hefei',
-  '西安': 'xian',
   '无锡': 'wuxi',
   '郑州': 'zhengzhou',
   '海南': 'hainan',
@@ -78,6 +93,46 @@ const PINYIN_MAP: Record<string, string> = {
   '陕西': 'shanxi',
   '江苏': 'jiangsu',
   '河南': 'henan'
+}
+
+/**
+ * 完整拼音映射表（从 pinyin_map.json 加载）
+ */
+export let PINYIN_MAP_LOADED = false
+let PINYIN_MAP_DATA: PinyinMapItem[] = []
+
+/**
+ * 城市名到拼音信息的映射表（用于快速查找）
+ * key: 城市名（去掉后缀如"市"、"县"、"区"）
+ * value: 拼音映射项
+ */
+let PINYIN_MAP_LOOKUP: Map<string, PinyinMapItem> = new Map()
+
+/**
+ * 加载拼音映射表
+ */
+export async function loadPinyinMap(context: Context): Promise<void> {
+  if (PINYIN_MAP_LOADED) {
+    return
+  }
+  
+  try {
+    const resourceMgr = context.resourceManager
+    const fileData = await resourceMgr.getRawFileContent('pinyin_map.json')
+    const textDecoder = util.TextDecoder.create('utf-8')
+    const jsonString = textDecoder.decodeToString(new Uint8Array(fileData))
+    PINYIN_MAP_DATA = JSON.parse(jsonString) as PinyinMapItem[]
+    
+    PINYIN_MAP_LOOKUP = new Map()
+    for (const item of PINYIN_MAP_DATA) {
+      const key = item.name.replace(/市|县|区$/, '')
+      PINYIN_MAP_LOOKUP.set(key, item)
+    }
+    
+    PINYIN_MAP_LOADED = true
+  } catch (error) {
+    console.error('Failed to load pinyin map:', error)
+  }
 }
 
 /**
@@ -115,6 +170,10 @@ export function extractProvince(cityName: string): string {
  * 获取城市拼音
  */
 export function getCityPinyin(cityName: string): string {
+  if (!cityName || cityName.trim() === '') {
+    return ''
+  }
+  
   // 先检查完整匹配
   if (PINYIN_MAP[cityName]) {
     return PINYIN_MAP[cityName]
@@ -122,6 +181,13 @@ export function getCityPinyin(cityName: string): string {
   
   // 提取城市名（去掉省份）
   const cityPart = cityName.split(' ').pop() || cityName
+  
+  // 去掉"市"、"县"、"区"等后缀
+  const cityWithoutSuffix = cityPart.replace(/市|县|区$/, '')
+  if (PINYIN_MAP[cityWithoutSuffix]) {
+    return PINYIN_MAP[cityWithoutSuffix] + 'shi'
+  }
+  
   if (PINYIN_MAP[cityPart]) {
     return PINYIN_MAP[cityPart]
   }
@@ -134,9 +200,21 @@ export function getCityPinyin(cityName: string): string {
  * 获取拼音首字母
  */
 export function getPinyinInitial(cityName: string): string {
+  if (!cityName || cityName.trim() === '') {
+    return '#'
+  }
+  
   const pinyin = getCityPinyin(cityName)
   if (pinyin && pinyin.length > 0) {
     return pinyin.charAt(0).toUpperCase()
+  }
+  
+  // 提取城市名（去掉省份和后缀）
+  const cityPart = cityName.split(' ').pop() || cityName
+  const cityWithoutSuffix = cityPart.replace(/市|县|区$/, '')
+  
+  if (PINYIN_MAP[cityWithoutSuffix]) {
+    return PINYIN_MAP[cityWithoutSuffix].charAt(0).toUpperCase()
   }
   
   // 如果没有拼音，使用城市名首字符
@@ -253,6 +331,7 @@ export function groupCitiesByAlphabet(cities: CityItem[]): CityGroup[] {
 
 /**
  * 搜索城市（支持中文和拼音）
+ * 支持拼音首字母前缀匹配（如 "js" 可匹配 "金山区"）
  */
 export function searchCities(cities: CityItem[], keyword: string): CityItem[] {
   if (!keyword || keyword.trim() === '') {
@@ -266,12 +345,12 @@ export function searchCities(cities: CityItem[], keyword: string): CityItem[] {
     const city = cities[i]
     let matched = false
     
-    // 中文匹配
+    // 1. 中文匹配
     if (city.name.includes(keyword)) {
       matched = true
     }
     
-    // 拼音匹配
+    // 2. 拼音完整匹配
     if (!matched) {
       const pinyin = city.pinyin || getCityPinyin(city.name)
       if (pinyin && pinyin.toLowerCase().includes(lowerKeyword)) {
@@ -279,10 +358,27 @@ export function searchCities(cities: CityItem[], keyword: string): CityItem[] {
       }
     }
     
-    // 拼音首字母匹配
+    // 3. 拼音首字母完全匹配
     if (!matched) {
       const initial = city.pinyinInitial || getPinyinInitial(city.name)
       if (initial.toLowerCase() === lowerKeyword) {
+        matched = true
+      }
+    }
+    
+    // 4. 拼音首字母前缀匹配（如 "js" 可匹配 "jsq"）
+    if (!matched) {
+      const initial = city.pinyinInitial || getPinyinInitial(city.name)
+      if (initial.toLowerCase().startsWith(lowerKeyword)) {
+        matched = true
+      }
+    }
+    
+    // 5. 从完整拼音映射表搜索（如果已加载）- 使用Map优化性能
+    if (!matched && PINYIN_MAP_LOADED && PINYIN_MAP_LOOKUP.size > 0) {
+      const key = city.name.replace(/市|县|区$/, '')
+      const pinyinInfo = PINYIN_MAP_LOOKUP.get(key)
+      if (pinyinInfo && pinyinInfo.initial.toLowerCase().startsWith(lowerKeyword)) {
         matched = true
       }
     }

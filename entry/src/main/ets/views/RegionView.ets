@@ -15,6 +15,7 @@ import {
   groupCitiesByAlphabet,
   searchCities,
   sortCities,
+  loadPinyinMap,
   CityGroup,
   CityItem,
   DistrictItem
@@ -22,6 +23,7 @@ import {
 import { PollenService } from '../service/PollenService'
 import { PollenLevel, getMaxPollenFromDaily } from '../model/PollenModels'
 import { loadChinaAreaData, getCityWithDistricts } from '../utils/ChinaAreaDataLoader'  // 新增：区县数据加载器
+import { PollenDataSourceType } from '../model/PollenDataSource' // ✅ 新增：导入枚举用于精准判断
 
 // 城市坐标接口
 interface CityCoordinate {
@@ -66,7 +68,8 @@ const cityCoordinates: Record<string, CityCoordinate> = {
 @Component
 export struct RegionView {
   @State searchText: string = ''
-  @State currentCity: string = '当前位置'
+  @StorageLink('currentCity') currentCity: string = '定位中...'
+  @StorageLink('currentAdcode') currentAdcode: string = ''
   @State actualLocationCity: string = ''  // GPS定位的真实城市名
   @State isAnimating: boolean = false
   @State firstLoad: boolean = true  // 首次加载标志（性能优化）
@@ -81,6 +84,8 @@ export struct RegionView {
   @StorageLink('safeBottom') safeBottom: number = 28
   @StorageLink('vibrationEnabled') vibrationEnabled: boolean = false  // 震动反馈开关
   @StorageLink('pollenThemeColor') pollenThemeColor: string = '#4CAF50'  // 花粉主题色
+  @StorageLink('pollenThemeTextColor') pollenThemeTextColor: string = '#2E7D32' // 花粉主题文字色
+  @StorageLink('pollenDataSource') dataSourceType: string = 'AUTO' // 当前数据源类型
   
   // 免费版收藏上限，后续可与会员体系打通
   private readonly MAX_FREE_FAVORITES: number = 4
@@ -184,23 +189,23 @@ export struct RegionView {
     return -1 // 无数据
   }
 
-  // 根据花粉等级获取颜色
+  // 根据花粉等级获取颜色 (确保对比度 ≥ 3:1)
   getPollenColor(level: number): ResourceColor {
     switch (level) {
       case 0:
-        return '#E8F5E9' // 无/极低 - 浅绿
+        return '#4CAF50' // 无/极低 - 绿色
       case 1:
-        return '#4CAF50' // 低 - 绿色
+        return '#8BC34A' // 很低 - 浅绿
       case 2:
-        return '#FFEB3B' // 中 - 黄色
+        return '#AFB42B' // 低 - 橄榄绿 (比原来的 #CDDC39 更深，确保可见度)
       case 3:
-        return '#FF9800' // 高 - 橙色
+        return '#FBC02D' // 中 - 深黄
       case 4:
-        return '#F44336' // 很高 - 红色
+        return '#F57C00' // 高 - 深橙
       case 5:
-        return '#9C27B0' // 极高 - 紫色
+        return '#D32F2F' // 很高 - 深红
       default:
-        return '#9E9E9E' // 无数据 - 灰色
+        return '#757575' // 无数据 - 灰色
     }
   }
 
@@ -208,13 +213,44 @@ export struct RegionView {
   // 过滤城市列表
   getFilteredCities(): CityItem[] {
     let targetList = this.cityList
+    const isGoogle = this.dataSourceType === PollenDataSourceType.GOOGLE
+    
+    console.info(`[RegionView] 🔍 过滤逻辑触发: dataSourceType=${this.dataSourceType}, isGoogle=${isGoogle}, searchText="${this.searchText}"`)
 
-    // 如果有搜索文本，使用工具类搜索（支持拼音）
     if (this.searchText && this.searchText.trim() !== '') {
-      targetList = searchCities(this.cityList, this.searchText)
+      if (isGoogle) {
+        // Google 模式：严格限制在基础 20 个城市中搜索
+        targetList = searchCities(this.cityList, this.searchText)
+        console.info(`[RegionView] Google 搜索模式，匹配数量: ${targetList.length}`)
+      } else {
+        // 国内源：支持全国 3200+ 区域搜索
+        if (this.allCitiesData && this.allCitiesData.length > 0) {
+          targetList = searchCities(this.allCitiesData, this.searchText)
+          if (targetList.length > 50) {
+            targetList = targetList.slice(0, 50)
+          }
+          console.info(`[RegionView] 国内源搜索模式，匹配数量: ${targetList.length}`)
+        } else {
+          targetList = searchCities(this.cityList, this.searchText)
+        }
+      }
+    } else {
+      // 无搜索时
+      if (isGoogle) {
+        // Google 模式：只显示基础列表 (约20个城市)
+        targetList = this.cityList
+        console.info(`[RegionView] Google 模式 - 显示基础城市列表 (${targetList.length}个)`)
+      } else {
+        // 国内源/AUTO 模式：显示全国 3200+ 区域列表（按省份分组）
+        if (this.allCitiesData && this.allCitiesData.length > 0) {
+          targetList = this.allCitiesData
+          console.info(`[RegionView] 国内源模式 - 显示全量城市列表 (${targetList.length}个)`)
+        } else {
+          targetList = this.cityList
+        }
+      }
     }
 
-    // 使用工具类排序
     return sortCities(targetList)
   }
 
@@ -503,7 +539,7 @@ export struct RegionView {
     this.favoriteCities = newFavorites
 
     // 持久化到全局存储，便于下次启动恢复
-    AppStorage.SetOrCreate<string[]>('favoriteCities', newFavorites)
+    AppStorage.setOrCreate<string[]>('favoriteCities', newFavorites)
 
     // 轻微震动反馈
     if (this.vibrationEnabled) {
@@ -668,6 +704,11 @@ export struct RegionView {
 
   // 生命周期：组件即将出现
   async aboutToAppear(): Promise<void> {
+    // 加载拼音映射表（支持智能搜索）
+    console.info('[RegionView] 加载拼音映射表...')
+    await loadPinyinMap(getContext(this))
+    console.info('[RegionView] 拼音映射表加载完成')
+    
     // 【测试代码】加载区县数据
     console.info('[RegionView-Test] 开始加载区县数据...')
     try {
@@ -711,12 +752,8 @@ export struct RegionView {
     console.info('[RegionView-Test] 测试完毕\n')
     // 【测试代码结束】
 
-    // 1. 从 AppStorage 读取当前城市
-    const storedCity = AppStorage.Get<string>('currentCity')
-    if (storedCity) {
-      this.currentCity = storedCity
-      console.info(`[RegionView] 使用已存储城市: ${storedCity}`)
-    }
+    // 1. 从 AppStorage 读取当前城市 (由于使用了 @StorageLink，这里主要是为了日志)
+    console.info(`[RegionView] 当前城市: ${this.currentCity}, adcode: ${this.currentAdcode}`)
 
     // 1.5 从 AppStorage 读取收藏列表
     const storedFavorites = AppStorage.Get<string[]>('favoriteCities')
@@ -837,15 +874,22 @@ export struct RegionView {
                 Image($r('app.media.icon_location'))
                   .width(18)
                   .height(18)
-                  .fillColor(this.pollenThemeColor)
+                  .fillColor(this.pollenThemeTextColor as ResourceColor)
                   .margin({ right: 12 })
                 
                 // 市级名称
                 Column() {
-                  Text((this.favoriteCities.includes(this.selectedCityForDistrict.name) ? '★ ' : '') + `整个${this.selectedCityForDistrict.name}`)
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor($r('app.color.text_primary'))
+                  Row() {
+                    if (this.favoriteCities.includes(this.selectedCityForDistrict.name)) {
+                      Text('★ ')
+                        .fontSize(14)
+                        .fontColor(this.pollenThemeTextColor as ResourceColor)
+                    }
+                    Text(`整个${this.selectedCityForDistrict.name}`)
+                      .fontSize(16)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor($r('app.color.text_primary'))
+                  }
                   
                   Text('查看市级整体数据')
                     .fontSize(12)
@@ -860,7 +904,7 @@ export struct RegionView {
                 Image($r('app.media.icon_chevron_right'))
                   .width(16)
                   .height(16)
-                  .fillColor(this.pollenThemeColor)
+                  .fillColor(this.pollenThemeTextColor as ResourceColor)
               }
               .width('100%')
               .padding({ left: 20, right: 20, top: 16, bottom: 16 })
@@ -986,7 +1030,7 @@ export struct RegionView {
                       if (this.favoriteCities.includes(`${this.selectedCityForDistrict?.name || ''} - ${district.name}`)) {
                         Text('★')
                           .fontSize(14)
-                          .fontColor(this.pollenThemeColor as ResourceColor)
+                          .fontColor(this.pollenThemeTextColor as ResourceColor)
                           .margin({ right: 4 })
                       }
                       Text(district.name)
@@ -1100,7 +1144,7 @@ export struct RegionView {
       Image($r('app.media.icon_chevron_right'))
         .width(12)
         .height(12)
-        .fillColor(this.pollenThemeColor as ResourceColor)
+        .fillColor(this.pollenThemeTextColor as ResourceColor)
 
       // 城市名称 + 收藏状态
       Column() {
@@ -1108,7 +1152,7 @@ export struct RegionView {
           if (city.isFavorite) {
             Text('★')
               .fontSize(14)
-              .fontColor(this.pollenThemeColor as ResourceColor)
+              .fontColor(this.pollenThemeTextColor as ResourceColor)
               .margin({ right: 4 })
           }
           Text(city.name)
@@ -1492,6 +1536,14 @@ export struct RegionView {
   // 选择城市处理函数（支持区县选择）
   selectCity(cityName: string): void {
     console.info(`[RegionView] 选择城市: ${cityName}`)
+    
+    // 【关键修复】如果是 Google 数据源，直接选中城市，不弹出区县菜单
+    if (this.dataSourceType === PollenDataSourceType.GOOGLE) {
+      console.info(`[RegionView] Google 模式：跳过区县选择，直接选中城市 ${cityName}`)
+      this.selectCityOrDistrict(cityName, null)
+      return
+    }
+
     console.info(`[RegionView] allCitiesData 长度: ${this.allCitiesData.length}`)
     
     // 🔍 调试：打印前10个城市名，检查格式
@@ -1580,44 +1632,57 @@ export struct RegionView {
       duration: 1500
     })
 
-    // 3. 获取坐标
+    // 3. 获取坐标和 adcode
     let coords: CityCoordinate | undefined = undefined
+    let currentAdcode: string | undefined = undefined
     
     if (districtName) {
       // 从区县数据中获取坐标
       const cityData = getCityWithDistricts(this.allCitiesData, cityName)
       if (cityData && cityData.districts) {
         const district = cityData.districts.find(d => d.name === districtName)
-        if (district && district.location) {
-          coords = { lat: district.location.lat, lng: district.location.lng }
-          console.info(`[RegionView] 区县坐标: ${coords.lat}, ${coords.lng}`)
+        if (district) {
+          if (district.location) {
+            coords = { lat: district.location.lat, lng: district.location.lng }
+            console.info(`[RegionView] 区县坐标: ${coords.lat}, ${coords.lng}`)
+          }
+          currentAdcode = district.adcode
+          console.info(`[RegionView] 区县 adcode: ${currentAdcode}`)
         }
       }
     } else {
       // 从城市坐标映射表获取
       coords = cityCoordinates[cityName]
       // 如果映射表没有，尝试从完整数据获取
-      if (!coords) {
-        const cityData = getCityWithDistricts(this.allCitiesData, cityName)
-        if (cityData && cityData.location) {
+      const cityData = getCityWithDistricts(this.allCitiesData, cityName)
+      if (cityData) {
+        if (!coords && cityData.location) {
           coords = { lat: cityData.location.lat, lng: cityData.location.lng }
           console.info(`[RegionView] 从完整数据获取城市坐标: ${coords.lat}, ${coords.lng}`)
         }
+        currentAdcode = cityData.adcode
+        console.info(`[RegionView] 城市 adcode: ${currentAdcode}`)
       }
     }
 
     // 4. 更新全局存储
-    AppStorage.SetOrCreate<string>('currentCity', displayName)
     this.currentCity = displayName
+    
+    if (currentAdcode) {
+      this.currentAdcode = currentAdcode
+      console.info(`[RegionView] 已更新持久化 adcode: ${currentAdcode}`)
+    } else {
+      this.currentAdcode = ''
+    }
 
     if (coords) {
-      AppStorage.SetOrCreate<number>('latitude', coords.lat)
-      AppStorage.SetOrCreate<number>('longitude', coords.lng)
+      AppStorage.setOrCreate<number>('latitude', coords.lat)
+      AppStorage.setOrCreate<number>('longitude', coords.lng)
       console.info(`[RegionView] 最终坐标: ${coords.lat}, ${coords.lng}`)
     } else {
       console.warn(`[RegionView] 未找到 ${displayName} 的坐标，使用默认值`)
-      AppStorage.SetOrCreate<number>('latitude', 23.1291)
-      AppStorage.SetOrCreate<number>('longitude', 113.2644)
+      AppStorage.setOrCreate<number>('latitude', 23.1291)
+      AppStorage.setOrCreate<number>('longitude', 113.2644)
     }
 
     // 5. 关闭弹窗
@@ -1626,7 +1691,7 @@ export struct RegionView {
 
     // 6. 【暂不实现】跳转到首页（Tab 0）并刷新数据
     // TODO: 后续如需恢复此功能，取消注释以下代码
-    // AppStorage.SetOrCreate<number>('selectedTabIndex', 0)
+    // AppStorage.setOrCreate<number>('selectedTabIndex', 0)
     console.info(`[RegionView] 已选择: ${displayName}，坐标已保存（暂不跳转首页）`)
   }
 

@@ -70,11 +70,11 @@ export const POLLEN_DATA_SOURCES: PollenDataSourceConfig[] = [
   {
     type: PollenDataSourceType.QWEATHER,
     name: '和风天气',
-    description: '国内花粉数据（如果支持）',
+    description: '国内生活指数花粉数据，覆盖全国3578个城市区县',
     coverage: '国内',
     accuracy: '中',
     updateFrequency: '每日更新',
-    enabled: false  // 待实现
+    enabled: true  // ✅ 已实现（2026-01-16）
   }
 ]
 

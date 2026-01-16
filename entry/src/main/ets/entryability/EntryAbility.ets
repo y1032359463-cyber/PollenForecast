@@ -4,8 +4,15 @@ import { window, display } from '@kit.ArkUI';
 import { LocationService } from '../service/LocationService';
 import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit';
 import { NotificationService } from '../utils/NotificationService';
+import { loadPinyinMap } from '../utils/CityUtils';
 
 const DOMAIN = 0x0000;
+
+interface ErrorInfo {
+  code?: number
+  message?: string
+  data?: Record<string, Object>
+}
 
 export default class EntryAbility extends UIAbility {
   private mainWindowInstance?: window.Window;
@@ -16,16 +23,36 @@ export default class EntryAbility extends UIAbility {
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
-      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(errorInfo));
     }
 
-    // 初始化共享数据
-    AppStorage.setOrCreate('currentCity', '定位中...');
+    // 0. 初始化持久化存储
+    PersistentStorage.persistProp('currentCity', '北京市');
+    PersistentStorage.persistProp('currentAdcode', '110000');
+    PersistentStorage.persistProp('pollenDataSource', 'AUTO');
+    PersistentStorage.persistProp('latitude', 39.9042);
+    PersistentStorage.persistProp('longitude', 116.4074);
+    PersistentStorage.persistProp('favoriteCities', []);
+    PersistentStorage.persistProp('vibrationEnabled', true);
+    PersistentStorage.persistProp('notificationEnabled', false);
+
+    // 1. 初始化共享数据
+    // 注意：已持久化的属性（currentCity, currentAdcode, pollenDataSource 等）不要在这里 setOrCreate，否则会覆盖持久化的值
+    if (!AppStorage.has('currentCity')) {
+      AppStorage.setOrCreate('currentCity', '北京市');
+    }
     AppStorage.setOrCreate('pollenValue', 0);
     AppStorage.setOrCreate('pollenLevel', '加载中...');
     AppStorage.setOrCreate('updateTime', '获取中...');
-    AppStorage.setOrCreate('latitude', 23.1291);
-    AppStorage.setOrCreate('longitude', 113.2644);
+    
+    // 如果没有持久化坐标，则设置默认值
+    if (!AppStorage.has('latitude')) {
+      AppStorage.setOrCreate('latitude', 39.9042);
+    }
+    if (!AppStorage.has('longitude')) {
+      AppStorage.setOrCreate('longitude', 116.4074);
+    }
 
     // 初始化花粉主题色（默认绿色 - 极低等级）
     AppStorage.setOrCreate('pollenThemeColor', '#4CAF50');
@@ -36,20 +63,24 @@ export default class EntryAbility extends UIAbility {
     // 初始化应用前后台状态
     AppStorage.setOrCreate('isAppInBackground', false);
 
-    // 初始化通知设置（默认关闭）
-    AppStorage.setOrCreate('notificationEnabled', false);
+    // 初始化通知设置（仅当不存在时设置默认值）
+    if (!AppStorage.has('notificationEnabled')) {
+      AppStorage.setOrCreate('notificationEnabled', false);
+    }
     AppStorage.setOrCreate('pollenAlertEnabled', true);
     AppStorage.setOrCreate('dailyReportEnabled', true);
     AppStorage.setOrCreate('dailyReportTime', '08:00');
-
-    // 初始化数据源选择（默认自动选择）
-    AppStorage.setOrCreate('pollenDataSource', 'AUTO');
 
     // 设置 LocationService 的 context
     LocationService.getInstance().setContext(this.context);
 
     // 设置 NotificationService 的 context（用于 WorkScheduler）
     NotificationService.getInstance().setContext(this.context);
+
+    // 加载拼音映射表（异步加载，不阻塞启动）
+    loadPinyinMap(this.context).catch(() => {
+      hilog.error(DOMAIN, 'testTag', '加载拼音映射表失败');
+    });
 
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
@@ -79,14 +110,16 @@ export default class EntryAbility extends UIAbility {
     try {
       mainWindow.setWindowLayoutFullScreen(true);
     } catch (err) {
-      hilog.error(DOMAIN, 'testTag', '设置全屏失败: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      hilog.error(DOMAIN, 'testTag', '设置全屏失败: %{public}s', JSON.stringify(errorInfo));
     }
 
     // 2. 根据当前主题设置状态栏
     try {
       this.updateStatusBarForTheme(mainWindow);
     } catch (err) {
-      hilog.error(DOMAIN, 'testTag', '更新状态栏失败: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      hilog.error(DOMAIN, 'testTag', '更新状态栏失败: %{public}s', JSON.stringify(errorInfo));
     }
 
     // 3. 动态获取安全区域高度并存储到 AppStorage
@@ -103,7 +136,8 @@ export default class EntryAbility extends UIAbility {
       try {
         density = display.getDefaultDisplaySync().densityPixels;
       } catch (displayErr) {
-        hilog.error(DOMAIN, 'testTag', '获取屏幕密度失败: %{public}s', JSON.stringify(displayErr));
+        const errorInfo = displayErr as ErrorInfo
+        hilog.error(DOMAIN, 'testTag', '获取屏幕密度失败: %{public}s', JSON.stringify(errorInfo));
       }
 
       const safeTop = statusBarHeight / density;
@@ -113,10 +147,11 @@ export default class EntryAbility extends UIAbility {
       AppStorage.setOrCreate('safeBottom', safeBottom);
       hilog.info(DOMAIN, 'testTag', `SafeArea - top: ${safeTop}vp, bottom: ${safeBottom}vp`);
     } catch (err) {
+      const errorInfo = err as ErrorInfo
       // 获取失败时使用默认值
       AppStorage.setOrCreate('safeTop', 44);
       AppStorage.setOrCreate('safeBottom', 28);
-      hilog.error(DOMAIN, 'testTag', 'Failed to get avoidArea: %{public}s', JSON.stringify(err));
+      hilog.error(DOMAIN, 'testTag', 'Failed to get avoidArea: %{public}s', JSON.stringify(errorInfo));
     }
 
     windowStage.loadContent('pages/Index', (err) => {
@@ -159,7 +194,8 @@ export default class EntryAbility extends UIAbility {
 
       mainWindow.setWindowSystemBarProperties(systemBarProperties);
     } catch (err) {
-      hilog.error(DOMAIN, 'testTag', '设置状态栏失败: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      hilog.error(DOMAIN, 'testTag', '设置状态栏失败: %{public}s', JSON.stringify(errorInfo));
     }
   }
 
@@ -189,7 +225,8 @@ export default class EntryAbility extends UIAbility {
       const notificationService = NotificationService.getInstance();
       await notificationService.checkAndSendDailyReport();
     } catch (err) {
-      hilog.error(DOMAIN, 'testTag', `检查每日播报失败: ${JSON.stringify(err)}`);
+      const errorInfo = err as ErrorInfo
+      hilog.error(DOMAIN, 'testTag', `检查每日播报失败: ${JSON.stringify(errorInfo)}`);
     }
   }
 
@@ -239,8 +276,9 @@ export default class EntryAbility extends UIAbility {
         hilog.warn(DOMAIN, 'testTag', '⚠️ 定位权限被拒绝');
       }
     } catch (err) {
-      console.error('❌ [EntryAbility] 请求定位权限失败: ' + JSON.stringify(err));
-      hilog.error(DOMAIN, 'testTag', '❌ 请求定位权限失败: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      console.error('❌ [EntryAbility] 请求定位权限失败: ' + JSON.stringify(errorInfo));
+      hilog.error(DOMAIN, 'testTag', '❌ 请求定位权限失败: %{public}s', JSON.stringify(errorInfo));
     }
   }
 
@@ -272,8 +310,9 @@ export default class EntryAbility extends UIAbility {
         hilog.warn(DOMAIN, 'testTag', '⚠️ 代理提醒权限被拒绝');
       }
     } catch (err) {
-      console.error('❌ [EntryAbility] 请求代理提醒权限失败: ' + JSON.stringify(err));
-      hilog.error(DOMAIN, 'testTag', '❌ 请求代理提醒权限失败: %{public}s', JSON.stringify(err));
+      const errorInfo = err as ErrorInfo
+      console.error('❌ [EntryAbility] 请求代理提醒权限失败: ' + JSON.stringify(errorInfo));
+      hilog.error(DOMAIN, 'testTag', '❌ 请求代理提醒权限失败: %{public}s', JSON.stringify(errorInfo));
     }
   }
 }

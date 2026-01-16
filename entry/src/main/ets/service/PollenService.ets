@@ -8,6 +8,7 @@ import { http } from '@kit.NetworkKit'
 import { PollenForecastResponse } from '../model/PollenModels'
 import { PollenDataSourceType } from '../model/PollenDataSource'
 import { MinshuDataSourceAdapter } from './MinshuDataSourceAdapter'
+import { QweatherDataSourceAdapter } from './QweatherDataSourceAdapter'
 
 /**
  * 服务器配置
@@ -177,37 +178,51 @@ export class PollenService {
     days: number
   ): Promise<PollenForecastResponse | null> {
     const url = `${server.url}?lat=${latitude}&lng=${longitude}&days=${days}`
-    console.info(`[PollenService] 尝试服务器 [${server.name}]: ${url}`)
+    console.info(`[PollenService] 🚀 准备向服务器 [${server.name}] 发起请求: ${url}`)
 
     const httpRequest = http.createHttp()
+    const startTime = Date.now()
 
     try {
+      console.info(`[PollenService] [${server.name}] 正在执行异步请求...`)
       const response = await httpRequest.request(url, {
         method: http.RequestMethod.GET,
         header: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         connectTimeout: server.timeout,
         readTimeout: server.timeout
       })
 
-      console.info(`[PollenService] [${server.name}] 响应码: ${response.responseCode}`)
+      const duration = Date.now() - startTime
+      console.info(`[PollenService] [${server.name}] 请求完成，耗时: ${duration}ms, 响应码: ${response.responseCode}`)
 
       if (response.responseCode === 200) {
-        const resultStr = response.result as string
-        const result: PollenForecastResponse = JSON.parse(resultStr)
-        console.info(`[PollenService] [${server.name}] 获取成功: ${result.regionCode}`)
-        httpRequest.destroy()
-        this.markServerSuccess(server.url)
-        return result
+        const resultStr = typeof response.result === 'string' ? response.result : JSON.stringify(response.result)
+        console.info(`[PollenService] [${server.name}] 原始响应预览: ${resultStr.substring(0, 300)}${resultStr.length > 300 ? '...' : ''}`)
+        
+        try {
+          const result: PollenForecastResponse = JSON.parse(resultStr)
+          console.info(`[PollenService] [${server.name}] 数据解析成功: ${result.regionCode || '未知区域'}`)
+          httpRequest.destroy()
+          this.markServerSuccess(server.url)
+          return result
+        } catch (e) {
+          console.error(`[PollenService] [${server.name}] JSON 解析失败: ${e.message}, 响应长度: ${resultStr.length}`)
+          httpRequest.destroy()
+          this.markServerFail(server.url)
+          return null
+        }
       } else {
-        console.error(`[PollenService] [${server.name}] 请求失败: ${response.responseCode}`)
+        console.error(`[PollenService] [${server.name}] 服务器返回错误码: ${response.responseCode}`)
         httpRequest.destroy()
         this.markServerFail(server.url)
         return null
       }
     } catch (error) {
-      console.error(`[PollenService] [${server.name}] 网络异常: ${JSON.stringify(error)}`)
+      const duration = Date.now() - startTime
+      console.error(`[PollenService] [${server.name}] ❌ 请求发生异常 (耗时 ${duration}ms): ${JSON.stringify(error)}`)
       httpRequest.destroy()
       this.markServerFail(server.url)
       return null
@@ -269,9 +284,8 @@ export class PollenService {
         return null
       
       case PollenDataSourceType.QWEATHER:
-        // 和风天气（待实现）
-        console.warn('[PollenService] 和风天气数据源暂未实现')
-        return null
+        // 和风天气（已实现）
+        return await this.getPollenForecastFromQweather(latitude, longitude, days)
       
       default:
         console.error(`[PollenService] 未知的数据源类型: ${dataSourceType}`)
@@ -319,6 +333,40 @@ export class PollenService {
       return result
     } catch (error) {
       console.error(`[PollenService] 敏舒 API 请求异常: ${JSON.stringify(error)}`)
+      return null
+    }
+  }
+
+  /**
+   * 从和风天气 API 获取数据
+   * @param latitude 纬度
+   * @param longitude 经度
+   * @param days 预报天数
+   */
+  private async getPollenForecastFromQweather(
+    latitude: number,
+    longitude: number,
+    days: number
+  ): Promise<PollenForecastResponse | null> {
+    try {
+      const adapter = new QweatherDataSourceAdapter()
+      if (!adapter.isAvailable()) {
+        console.warn('[PollenService] 和风天气数据源不可用')
+        return null
+      }
+      
+      console.info('[PollenService] 开始请求和风天气 API')
+      const result = await adapter.fetchPollenData(latitude, longitude, days)
+      
+      if (result) {
+        console.info(`[PollenService] 和风天气 API 获取成功: ${result.regionCode}`)
+      } else {
+        console.warn('[PollenService] 和风天气 API 获取失败')
+      }
+      
+      return result
+    } catch (error) {
+      console.error(`[PollenService] 和风天气 API 请求异常: ${JSON.stringify(error)}`)
       return null
     }
   }
