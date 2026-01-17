@@ -1,0 +1,61 @@
+Design operator button assets (+, -, ×, ÷) for a cute calculator app with these specifications:
+
+## Button Dimensions
+- Size: 200×200px (@3x scale, 600×600px actual)
+- Export as: PNG with transparent background
+- Border radius: 48px (at @3x scale)
+
+## Button Appearance
+- Background color: #FFB366 (warm orange)
+- Shadow: subtle soft shadow (0px 4px 12px rgba(255, 140, 66, 0.2))
+- Border: none
+
+## Operator Symbol Typography
+- Font: SF Pro Rounded Bold
+- Font size: 80px (at @3x scale)
+- Font color: #FFFFFF (white)
+- Position: center aligned (both horizontal and vertical)
+
+## Design Style
+- Style: cute, vibrant, friendly
+- Corners: smooth rounded corners
+- Surface: slight gradient (lighter at top: #FFC480, darker at bottom: #FFB366)
+- Visual weight: slightly more prominent than number buttons
+
+## Operators to Create (4 buttons total)
+1. Plus button: "+"
+2. Minus button: "-" (use longer horizontal line, not hyphen)
+3. Multiply button: "×" (use proper multiplication sign, not lowercase x)
+4. Divide button: "÷" (use proper division sign with dots)
+
+## Symbol Specifications
+- Plus (+): vertical and horizontal lines, same thickness
+- Minus (−): centered horizontal line, bold weight
+- Multiply (×): diagonal cross, symmetric, bold
+- Divide (÷): horizontal line with dots above and below
+
+## Export Requirements
+- Format: PNG
+- Resolution: @3x (600×600px)
+- Naming convention:
+  * btn_plus.png
+  * btn_minus.png
+  * btn_multiply.png
+  * btn_divide.png
+- Background: transparent
+- Color profile: sRGB
+
+## Quality Standards
+- Sharp edges and symbols
+- Consistent shadow across all buttons
+- Exact color matching (#FFB366 background, #FFFFFF symbols)
+- Perfect center alignment
+- Symbols should be clear and easily recognizable
+- Professional appearance
+
+## Visual Hierarchy
+- These buttons should stand out slightly more than number buttons
+- Slightly stronger shadow for depth
+- Color contrast ensures they're visually distinct from number buttons
+
+Create all 4 operator buttons as separate components with these exact specifications.

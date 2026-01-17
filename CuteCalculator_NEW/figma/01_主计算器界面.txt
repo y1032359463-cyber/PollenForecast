@@ -1,0 +1,181 @@
+Design System Context:
+- App: 可爱计算器 (CuteCalculator) - A lovely calculator with hand-drawn cute UI
+- Style: Cute, warm, friendly, kawaii aesthetic
+- Primary Color: Warm Orange (#FF8C42)
+- Secondary Color: Soft Pink (#FFB3C1)
+- Background: Cream (#FFF5E6)
+- Typography: HarmonyOS Sans / SF Pro Rounded
+  * Display: 32px/40px/Bold (titles)
+  * Title: 28px/36px/Semibold (headers)
+  * Body Large: 28px/36px/Semibold (button text)
+  * Body: 24px/32px/Regular (expression text)
+  * Result: 48px/56px/Bold (result display)
+  * Caption: 14px/20px/Regular (small labels)
+- Spacing: 8px grid system (all spacing must be multiples of 4px)
+  * Button gap: 8px
+  * Component padding: 16px
+  * Section spacing: 24px
+  * Page padding: 20px
+- Border Radius:
+  * Buttons: 20px (16vp in final app)
+  * Cards: 16px (12vp in final app)
+  * Character container: 16px
+- Shadows:
+  * Button: 0 4px 12px rgba(193, 119, 53, 0.15)
+  * Card: 0 4px 16px rgba(255, 140, 66, 0.2)
+  * Floating: 0 6px 20px rgba(255, 140, 66, 0.25)
+- Character Design:
+  * Style: Cute cartoon cat with movable arms
+  * Export: LAYERED (body + arms separate)
+  * Arm animation: Vertical movement 20-30px range
+- Icons:
+  * Style: Rounded, friendly, simple
+  * Sizes: 24px (navigation), 32px (feature)
+- Interaction:
+  * Minimum touch target: 44px × 44px
+  * Animation duration: 150ms press, 300ms character
+  * Press effect: scale(0.95)
+- Accessibility:
+  * High contrast text on colored buttons (#FFFFFF on #FF8C42)
+  * Clear visual hierarchy
+  * Large touch targets
+
+---
+
+Create a mobile cute calculator app screen for HarmonyOS.
+Screen size: 360px × 780px (standard phone).
+
+Layout Structure:
+
+1. Header Section (56px height):
+   - Background: linear gradient (#FF8C42 to #FFB3C1, horizontal, left to right)
+   - Left: App title "可爱计算器" (20px, bold, white)
+   - Right: Two icons (24px each, white, 16px gap)
+     * History icon (clock symbol)
+     * Settings icon (gear symbol)
+   - Padding: 16px horizontal
+   - Shadow: 0 2px 8px rgba(255, 140, 66, 0.3)
+
+2. Character Section (180px height):
+   - Background: #FFF5E6
+   - Cute cat character (150×150px)
+   - Position: center horizontally, 15px from top
+   - Style: kawaii cartoon style
+   - Colors: warm orange (#FF8C42) and soft pink (#FFB3C1)
+   - Features: 
+     * Large expressive eyes
+     * Visible arms at sides (for animation)
+     * Happy smiling expression
+     * Round friendly face
+     * Small nose and whiskers
+
+3. Result Display Card (140px height):
+   - Background: white (#FFFFFF)
+   - Border: 1px solid #FFE4CC (light orange)
+   - Border radius: 16px
+   - Padding: 20px
+   - Margin: 0 20px (horizontal spacing from screen edges)
+   - Shadow: 0 4px 12px rgba(0, 0, 0, 0.08)
+   
+   Content (vertical stack):
+   - Expression text (top):
+     * Font: 24px, regular, #8E8E93
+     * Text align: right
+     * Example: "123 + 456"
+     * Line height: 32px
+   
+   - Vertical gap: 8px
+   
+   - Result text (bottom):
+     * Font: 48px, bold, #C17735 (warm brown)
+     * Text align: right
+     * Example: "579"
+     * Line height: 56px
+
+4. Keyboard Section (480px height):
+   - Background: #FFF5E6
+   - Grid layout: 4 columns × 5 rows
+   - Button size: 80×80px (standard button)
+   - Gap: 8px between all buttons
+   - Padding: 20px horizontal, 16px vertical
+   
+   Button Layout (5 rows × 4 columns):
+   Row 1: C    | DEL  | %    | ÷
+   Row 2: 7    | 8    | 9    | ×
+   Row 3: 4    | 5    | 6    | -
+   Row 4: 1    | 2    | 3    | +
+   Row 5: 0 (double width: 168×80px) | .    | =
+   
+   Button Appearance (placeholder for actual PNG assets):
+   
+   Numbers (0-9):
+   - Background: #FFF5E6 (cream)
+   - Text: #C17735 (warm brown)
+   - Font: 28px, semibold
+   - Border radius: 20px
+   - Shadow: 0 4px 12px rgba(193, 119, 53, 0.15)
+   - Gradient: subtle (lighter at top: #FFFBF5, darker at bottom: #FFF5E6)
+   
+   Operators (+, -, ×, ÷, %):
+   - Background: #FFB366 (warm orange)
+   - Text: #FFFFFF (white)
+   - Font: 28px, semibold
+   - Border radius: 20px
+   - Shadow: 0 4px 12px rgba(255, 140, 66, 0.2)
+   - Gradient: #FFC480 (top) to #FFB366 (bottom)
+   
+   Equal (=):
+   - Size: 80×168px (DOUBLE HEIGHT, spans 2 rows)
+   - Background: #FF8C42 (primary orange)
+   - Text: #FFFFFF (white)
+   - Font: 28px, semibold
+   - Border radius: 20px
+   - Shadow: 0 4px 16px rgba(255, 140, 66, 0.3)
+   - Gradient: #FFA15C (top) to #FF8C42 (bottom)
+   
+   Clear (C):
+   - Background: #FF6B6B (red)
+   - Text: #FFFFFF (white)
+   - Font: 28px, semibold
+   - Border radius: 20px
+   - Shadow: 0 4px 12px rgba(255, 107, 107, 0.25)
+   - Gradient: #FF8080 (top) to #FF6B6B (bottom)
+   
+   Delete (DEL):
+   - Background: #D1D1D6 (light gray)
+   - Text: #C17735 (warm brown)
+   - Font: 20px, semibold (smaller text)
+   - Border radius: 20px
+   - Shadow: 0 4px 12px rgba(209, 209, 214, 0.3)
+   - Gradient: #E0E0E5 (top) to #D1D1D6 (bottom)
+   
+   Dot (.):
+   - Background: #FFF5E6 (cream, same as numbers)
+   - Symbol: "•" (bullet point, larger)
+   - Color: #C17735 (warm brown)
+   - Font: 32px (larger for visibility)
+   - Border radius: 20px
+   - Shadow: 0 4px 12px rgba(193, 119, 53, 0.15)
+   - Gradient: #FFFBF5 (top) to #FFF5E6 (bottom)
+
+5. Safe Area Bottom (24px height):
+   - Background: #FFF5E6
+   - For system gesture bar
+
+Design Notes:
+- All colors MUST match EXACTLY (use HEX codes precisely)
+- All buttons have smooth gradients (lighter at top, darker at bottom)
+- Consistent shadow style across components
+- Character should have clear distinction for body/arms layering
+- High contrast for text readability
+- Minimum 44px touch target for all interactive elements
+- Smooth rounded corners throughout
+- Overall warm, friendly, inviting aesthetic
+
+Page Background: #FFF5E6 (cream color)
+
+Export Requirements:
+- Canvas size: 360px × 780px
+- Format: PNG for mockup preview
+- Resolution: @2x (720px × 1560px) for high quality
+- Character should be on separate layer if exporting as component

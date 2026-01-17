@@ -1,0 +1,69 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiao.p12",
+          "storePassword": "00000019599BAC8488810572150D1F08D39AD46F6A568163DA62F0469B03F9D42E6702BDBA4320DEE4",
+          "keyAlias": "katongmiao",
+          "keyPassword": "0000001912B3E9B327F7906D4A6155E9BE1CD7A334AD8DD2DC3628278C35A4979136207C1562CFAA8B",
+          "signAlg": "SHA256withECDSA",
+          "profile": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiaoRelease.p7b",
+          "certpath": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiao.cer"
+        }
+      },
+      {
+        "name": "katongmiao",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiao.cer",
+          "keyAlias": "katongmiao",
+          "keyPassword": "0000001907B1A80803CF52D425C4AE4AEC6AB5DEB9A955A234828BB97ACA576E8FF9A70BB822D5FB25",
+          "profile": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiaoRelease.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:/Users/Lenovo/证书/卡通喵计算器/katongmiao.p12",
+          "storePassword": "00000019995E6B2CD12FB2B8977DE701B5993ACC40711E3739A59E65C389CD2366FA1001CE674DDD84"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

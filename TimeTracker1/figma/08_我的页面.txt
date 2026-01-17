@@ -1,0 +1,196 @@
+Create a profile and settings screen for TimeTracker app (个人中心页面).
+
+CRITICAL REQUIREMENTS:
+1. Use EXACTLY #2196F3 for primary blue (NOT #3B82F6, #1976D2, or any other blue)
+2. ALL interactive elements MUST be minimum 48px height for touch accessibility
+3. Use Chinese labels for all UI text
+4. Include 20px bottom safe area for HarmonyOS gesture navigation
+
+Screen: 360×812px (full height including system areas).
+Content area: 360×736px (excluding 76px bottom navigation with safe area).
+
+Layout Structure:
+
+1. Header Section (56px height):
+   - Background: white (#FFFFFF)
+   - Title: "个人中心" (24px, bold, #212121) — MUST use Chinese
+   - Padding: 16px left/right
+
+2. User Card (140px height):
+   - Background: linear gradient (EXACTLY #2196F3 to #64B5F6, 135 degree angle)
+   - Border radius: 12px
+   - Padding: 20px
+   - Margin: 16px horizontal, 16px top
+   - Shadow: 0 4px 12px rgba(33, 150, 243, 0.3)
+   - Layout (horizontal):
+     * Left: Avatar
+       - Size: 64px circle
+       - Background: white (#FFFFFF)
+       - Icon: User symbol (32px, EXACTLY #2196F3, centered)
+     * Right: User Info (12px gap from avatar)
+       - Name: "用户名称" (20px, bold, white) — Chinese text
+       - Role: "小时工" (14px, regular, white 80% opacity) — Chinese text
+       - Member since: "注册于 2025年11月" (12px, regular, white 70% opacity) — Chinese text
+       - Vertical spacing: 4px between lines
+
+3. Settings List Section:
+   - Section title: "设置" (18px, bold, #212121, 16px margin-top) — MUST use Chinese
+   - Margin: 16px horizontal
+   - List items (6 items, 8px gap between items):
+   
+   Item 1 - Hourly Wage:
+     - Height: 56px (MUST be 56px minimum for touch)
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout (horizontal, 12px spacing):
+       * Icon: 💵 or money symbol (24×24px, #757575)
+       * Label: "时薪设置" (16px, regular, #212121) — Chinese
+       * Value: "¥30/小时" (14px, regular, #9E9E9E, right-aligned) — Chinese
+       * Arrow: → chevron right (16px, #BDBDBD)
+   
+   Item 2 - Work Cycle:
+     - Height: 56px
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout:
+       * Icon: 📅 or calendar symbol (24×24px, #757575)
+       * Label: "考勤周期" (16px, regular, #212121) — Chinese
+       * Value: "每周" (14px, regular, #9E9E9E, right-aligned) — Chinese
+       * Arrow: → chevron right (16px, #BDBDBD)
+   
+   Item 3 - Theme:
+     - Height: 56px
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout:
+       * Icon: 🎨 or palette symbol (24×24px, #757575)
+       * Label: "主题设置" (16px, regular, #212121) — Chinese
+       * Value: "跟随系统" (14px, regular, #9E9E9E, right-aligned) — Chinese
+       * Arrow: → chevron right (16px, #BDBDBD)
+   
+   Item 4 - Backup Data:
+     - Height: 56px
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout:
+       * Icon: 💾 or cloud symbol (24×24px, #757575)
+       * Label: "数据备份" (16px, regular, #212121) — Chinese
+       * No value text
+       * Arrow: → chevron right (16px, #BDBDBD)
+   
+   Item 5 - About:
+     - Height: 56px
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout:
+       * Icon: 📱 or info symbol (24×24px, #757575)
+       * Label: "关于应用" (16px, regular, #212121) — Chinese
+       * Value: "v1.0.0" (14px, regular, #9E9E9E, right-aligned)
+       * Arrow: → chevron right (16px, #BDBDBD)
+   
+   Item 6 - Advanced:
+     - Height: 56px
+     - Background: white (#FFFFFF)
+     - Border radius: 10px
+     - Padding: 12px 16px
+     - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+     - Layout:
+       * Icon: ⚙️ or gear symbol (24×24px, #757575)
+       * Label: "高级设置" (16px, regular, #212121) — Chinese
+       * No value text
+       * Arrow: → chevron right (16px, #BDBDBD)
+
+4. VIP Banner (80px height) - INTERFACE ONLY（仅UI预留，暂不实现功能）:
+   - Background: linear gradient (#FFD700 to #FFA500, 135 degree angle)
+   - Border radius: 12px
+   - Padding: 16px
+   - Margin: 16px horizontal, 16px top
+   - Shadow: 0 4px 12px rgba(255, 165, 0, 0.3)
+   - Note: 仅保留界面接口，点击事件和VIP功能逻辑暂不实现
+   - Layout (horizontal, 12px spacing):
+     * Left: Icon
+       - ⭐ star emoji or icon (32px)
+     * Center: Text Info (vertical stack, 4px spacing)
+       - Title: "升级VIP会员" (16px, bold, white) — Chinese
+       - Subtitle: "解锁高级功能" (12px, regular, white 80% opacity) — Chinese
+     * Right: Button
+       - Text: "了解更多" (14px, white) — Chinese
+       - Background: rgba(255, 255, 255, 0.3)
+       - Border radius: 16px (pill shape)
+       - Padding: 6px 12px
+
+5. Bottom Navigation (76px total height):
+   - Navigation bar height: 56px
+   - Safe area padding: 20px bottom (CRITICAL: for HarmonyOS gesture navigation)
+   - 3 tabs with equal width (120px each):
+     * Tab 1 (Inactive): Clock icon (24px) + "工时记录" (12px, #9E9E9E) — Chinese label
+     * Tab 2 (Inactive): Chart icon (24px) + "数据统计" (12px, #9E9E9E) — Chinese label
+     * Tab 3 (ACTIVE): User icon (24px) + "个人中心" (12px) — Chinese label
+   - Active state: EXACTLY #2196F3 color (icon + text)
+   - Inactive state: #9E9E9E color
+   - Background: white (#FFFFFF)
+   - Top border: 1px solid #E0E0E0
+   - Position: Fixed at bottom with 20px bottom padding for system gestures
+   - CRITICAL: 必须与01_首页.txt和02_记账页.txt的导航栏完全一致
+
+Page Background: #F8F9FA
+
+Color scheme (USE EXACTLY THESE COLORS):
+- Primary: EXACTLY #2196F3 (Material Design Blue 500)
+- Primary Gradient End: #64B5F6
+- VIP Gold Start: #FFD700
+- VIP Gold End: #FFA500
+- Background: #F8F9FA
+- Card: #FFFFFF
+- Text Primary: #212121
+- Text Secondary: #757575
+- Text Tertiary: #9E9E9E
+- Text Hint: #BDBDBD
+- Border: #E0E0E0
+
+Typography:
+- Page title: 24px bold
+- Section title: 18px bold
+- List item label: 16px regular
+- List item value: 14px regular
+- User name: 20px bold
+- User role: 14px regular
+- User member: 12px regular
+- VIP title: 16px bold
+- VIP subtitle: 12px regular
+
+Icons:
+- Use simple LINE-STYLE icons (NOT emoji, though emoji shown here for clarity)
+- Style: IconPark linear style + HarmonyOS Symbol
+- Sizes: 24×24px for settings icons, 32px for VIP star, 32px for avatar icon
+- All icons should be simple, outlined style
+
+Touch targets:
+- ALL tappable elements MUST be minimum 48px height
+- Settings list items: 56px height (exceeds 48px minimum)
+- Bottom tabs: 56px height + 20px safe area
+
+Style:
+- Clean HarmonyOS native style
+- Border radius: 8px for small elements, 10px for cards, 12px for large cards
+- Card elevation: subtle shadow
+- Clear visual hierarchy with section titles
+- 20px bottom safe area for gesture navigation
+
+Design System:
+- App: TimeTracker - Work hours tracking app for freelancers and hourly workers
+- Platform: HarmonyOS NEXT
+- Primary Color: EXACTLY #2196F3 (DO NOT use Tailwind colors)
+- Spacing: 8px grid system (8px, 12px, 16px, 20px, 24px)
+- Border Radius: 8px (inputs), 10px (cards), 12px (large cards), 16px (pills)
+- Icons: IconPark linear style + HarmonyOS Symbol

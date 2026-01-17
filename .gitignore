@@ -1,0 +1,81 @@
+﻿# ===== 鸿蒙构建产物 =====
+**/build/
+**/.hvigor/
+**/oh_modules/
+**/.cxx/
+**/node_modules/
+
+# ===== IDE 配置文件 =====
+**/.idea/
+**/.vscode/
+**/.deveco/
+**/.kiro/
+**/.trae/
+**/.appanalyzer/
+**/*.iml
+**/local.properties
+
+# ===== 备份文件和临时文件 =====
+**/backup/
+**/*_backup_*/
+**/*.bak
+**/*.tmp
+**/*.zip
+**/*.rar
+**/*.7z
+**/*.gz
+
+# ===== 日志文件 =====
+**/*.log
+**/hilog-*
+**/logs/
+
+# ===== 测试和调试文件 =====
+**/test/
+**/tests/
+**/.test/
+**/debug/
+
+# ===== Figma 设计文件（保留 .md，过滤大图） =====
+**/figma/**/*.png
+**/figma/**/*.jpg
+**/figma/**/*.jpeg
+**/figma/**/*.gif
+**/figma/**/*.zip
+**/figma/**/*.ttf
+**/figma/**/*.otf
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 敏感配置 =====
+**/agconnect-services.json
+**/.env
+**/.env.local
+
+# ===== 其他不需要的文件 =====
+**/*.code-workspace
+
+# ===== 额外过滤规则 =====
+# 计算器源码示例（如果不需要）
+计算器源码/
+
+# Figma 导出的组件代码（通常不需要）
+**/figma/**/components/
+**/figma/**/styles.zip
+**/figma/**/guidelines.zip
+**/figma/**/*.zip
+
+# 各种方案文档（如果是临时的）
+*方案.md
+*指南.md
+*报告.md
+上次回答.md
+下一步操作指南.md
+
+# 批处理脚本（如果是本地工具）
+*.bat
+*.ps1
+

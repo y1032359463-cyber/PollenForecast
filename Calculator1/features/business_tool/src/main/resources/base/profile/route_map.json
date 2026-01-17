@@ -1,0 +1,28 @@
+{
+  "routerMap": [
+    {
+      "name": "ToolPage",
+      "pageSourceFile": "src/main/ets/pages/ToolPageEntry.ets",
+      "buildFunction": "ToolPageBuilder",
+      "data": {
+        "description": "工具页面"
+      }
+    },
+    {
+      "name": "DateIntervalPage",
+      "pageSourceFile": "src/main/ets/pages/DateIntervalPage.ets",
+      "buildFunction": "DateIntervalPageBuilder",
+      "data": {
+        "description": "日期间隔计算页面"
+      }
+    },
+    {
+      "name": "DateCalculationPage",
+      "pageSourceFile": "src/main/ets/pages/DateCalculationPage.ets",
+      "buildFunction": "DateCalculationPageBuilder",
+      "data": {
+        "description": "日期计算页面"
+      }
+    }
+  ]
+}

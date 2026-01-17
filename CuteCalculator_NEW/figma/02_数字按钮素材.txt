@@ -1,0 +1,58 @@
+Design number button assets (0-9) for a cute calculator app with these specifications:
+
+## Button Dimensions
+- Size: 200×200px (@3x scale, 600×600px actual)
+- Export as: PNG with transparent background
+- Border radius: 48px (at @3x scale)
+
+## Button Appearance
+- Background color: #FFF5E6 (cream/beige)
+- Shadow: subtle soft shadow (0px 4px 12px rgba(193, 119, 53, 0.15))
+- Border: none
+
+## Number Typography
+- Font: SF Pro Rounded Bold
+- Font size: 80px (at @3x scale)
+- Font color: #C17735 (warm brown)
+- Position: center aligned (both horizontal and vertical)
+
+## Design Style
+- Style: cute, friendly, soft appearance
+- Corners: smooth rounded corners
+- Surface: slight gradient (lighter at top: #FFFBF5, darker at bottom: #FFF5E6)
+- Optional: very subtle texture for tactile feel
+
+## Numbers to Create (10 buttons total)
+1. Button with "0"
+2. Button with "1"
+3. Button with "2"
+4. Button with "3"
+5. Button with "4"
+6. Button with "5"
+7. Button with "6"
+8. Button with "7"
+9. Button with "8"
+10. Button with "9"
+
+## Special Button - Zero (0)
+- Size: 416×200px (@3x scale) - DOUBLE WIDTH
+- Everything else same as standard buttons
+- Number "0" centered in the double-width button
+
+## Export Requirements
+- Format: PNG
+- Resolution: @3x (600×600px for standard, 1248×600px for zero)
+- Naming convention:
+  * btn_0.png (double width)
+  * btn_1.png through btn_9.png (standard)
+- Background: transparent
+- Color profile: sRGB
+
+## Quality Standards
+- Sharp edges (no blur)
+- Consistent shadow across all buttons
+- Exact color matching (#FFF5E6 background, #C17735 text)
+- Perfect center alignment of numbers
+- Professional finish suitable for app store screenshots
+
+Create all 10 number buttons as separate components with these exact specifications.

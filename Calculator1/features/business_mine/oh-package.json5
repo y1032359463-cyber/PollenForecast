@@ -1,0 +1,12 @@
+{
+  "name": "business_mine",
+  "version": "1.0.0",
+  "description": "设置模块 - 包含应用设置、关于等功能",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "lib_foundation": "file:../../commons/lib_foundation",
+    "app_setting": "file:../../libs/setting/app_setting"
+  }
+}

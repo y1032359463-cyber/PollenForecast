@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "time_record",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}

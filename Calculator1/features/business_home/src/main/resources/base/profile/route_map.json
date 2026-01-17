@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "VipPage",
+      "pageSourceFile": "src/main/ets/pages/VipPage.ets",
+      "buildFunction": "VipPageBuilder",
+      "data": {
+        "description": "会员中心页面"
+      }
+    }
+  ]
+}

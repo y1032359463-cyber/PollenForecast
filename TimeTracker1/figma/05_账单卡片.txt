@@ -1,0 +1,42 @@
+Design a work session list item component for time tracking app. Shows individual time log entry.
+
+Component size: 328px × 80px (fits in 360px screen with 16px margins)
+
+Layout:
+- Left: Date box (56×56px)
+  - Date number: "14" (24px, bold, #2196F3)
+  - Weekday: "Thu" (12px, regular, #757575)
+  - Background: #E3F2FD, border radius: 8px
+- Center: Work details vertically stacked
+  - Duration: "8h 30m" (18px, bold, #212121)
+  - Time range: "09:00 AM - 05:30 PM" (14px, regular, #757575)
+  - Project (if any): "Project ABC" (14px, regular, #9E9E9E)
+- Right: Earnings "+¥255" (18px, bold, #4CAF50) aligned right
+
+Color scheme:
+- Background: White (#FFFFFF)
+- Date box background: Light blue (#E3F2FD)
+- Date number: Primary blue (#2196F3)
+- Text primary: Dark gray (#212121)
+- Text secondary: Medium gray (#757575)
+- Text tertiary: Light gray (#9E9E9E)
+- Earnings: Green (#4CAF50)
+- Border: Light divider (#E5E5EA)
+
+Typography:
+- Date number: 24px bold (HarmonyOS Sans)
+- Weekday: 12px regular
+- Duration: 18px bold
+- Time range: 14px regular
+- Project: 14px regular
+- Earnings: 18px bold
+
+Style: Clean list item, minimal design, 12px padding top/bottom, slight divider line (1px, #E5E5EA) below item, modern iOS/HarmonyOS list style.
+
+Interaction: Should look tappable for editing work session details.
+
+Design System:
+- App: TimeTracker
+- Primary Color: #2196F3
+- Spacing: 12px between elements
+记得是中文应用

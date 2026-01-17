@@ -1,0 +1,14 @@
+{
+  "src": [
+    "pages/SplashPage",
+    "pages/AdvertisingPage",
+    "pages/MainPage",
+    "pages/TaskListPage",
+    "pages/TaskEditPage",
+    "pages/StatisticsPage",
+    "pages/AchievementPage",
+    "pages/ReminderSettingsPage",
+    "pages/ThemeSettingsPage",
+    "pages/DataExportPage"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "可爱计算器模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "可爱计算器应用"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "可爱计算器"
+    },
+    {
+      "name": "permission_vibrate_reason",
+      "value": "按键振动反馈"
+    }
+  ]
+}

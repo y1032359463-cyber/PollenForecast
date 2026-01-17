@@ -1,0 +1,12 @@
+{
+  "module": {
+    "name": "business_mine",
+    "type": "shared",
+    "routerMap": "$profile:route_map",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false
+  }
+}

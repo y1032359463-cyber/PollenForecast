@@ -1,0 +1,81 @@
+Design a statistics screen for time tracking app.
+Screen size: 360px × 812px (full height including system areas).
+Content area: 360px × 756px (excluding 56px bottom safe area).
+
+Layout Structure:
+
+1. Header (56px):
+   - Title: "数据统计" (24px, bold, #212121)
+   - Background: white
+   - Padding: 16px
+
+2. Period Selector (48px):
+   - 3 toggle buttons: "周" | "月" | "年"
+   - Button size: 104px × 32px
+   - Active: #2196F3 background, white text
+   - Inactive: transparent, #757575 text
+   - Border radius: 16px (pill shape)
+   - Background: #F5F5F5
+   - Padding: 8px
+   - Margin: 16px horizontal
+
+3. Time Overview Card (160px):
+   - Background: white
+   - Border radius: 12px
+   - Padding: 20px
+   - Margin: 16px
+   - Content:
+     * Large number: "128" (48px, bold, #2196F3)
+     * Unit: "小时" (16px, #757575)
+     * Subtitle: "本月" (14px, #9E9E9E)
+     * Change indicator: "较上月 +12%" (12px, #4CAF50)
+       with up arrow icon (12px)
+   - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+
+4. Stats Cards (2×2 Grid):
+   - Card size: 164px × 100px
+   - Gap: 16px
+   - Margin: 16px
+   - Card layout:
+     * Icon: 32px, top-left
+     * Label: 14px, #757575
+     * Value: 24px, bold, #212121
+   - Card 1: 💰 "总收入" "¥3,840"
+   - Card 2: 📅 "工作天数" "18"
+   - Card 3: ⏱ "日均工时" "7.1小时"
+   - Card 4: 💵 "时薪" "¥30/小时"
+   - Background: white
+   - Border radius: 10px
+   - Padding: 16px
+   - Shadow: 0 2px 8px rgba(0,0,0,0.06)
+
+5. Chart Section (240px):
+   - Title: "周工时趋势" (18px, bold, #212121)
+   - Bar chart: 7 bars (周一-周日)
+   - Bar color: #2196F3
+   - Bar height: varies (max 180px for 10 hours)
+   - Bar width: 32px
+   - Bar radius: 4px top corners
+   - X-axis labels: day names (12px, #9E9E9E)
+   - Y-axis: hour markers (12px, #9E9E9E)
+   - Background: white
+   - Border radius: 12px
+   - Padding: 20px
+   - Margin: 16px
+
+6. Bottom Navigation (56px height + 20px safe area = 76px total):
+   - 3 tabs with equal width (120px each)
+   - Tab 1: Clock icon + "工时记录"
+   - Tab 2: Chart icon + "数据统计" (active, #2196F3)
+   - Tab 3: User icon + "个人中心"
+   - Inactive state: #9E9E9E
+   - Bottom padding: 20px safe area for HarmonyOS system navigation
+
+Page Background: #F8F9FA
+
+Design System:
+- App: TimeTracker 记工时应用
+- Primary Color: #2196F3
+- Typography: HarmonyOS Sans SC (简体中文)
+- Language: 简体中文
+- Style: Clean, data-focused dashboard

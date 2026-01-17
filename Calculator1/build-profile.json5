@@ -1,0 +1,120 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\default_Calculator1_REFSM_ly_fp0fMUACHxlnE030p02rrIiVDiDO6qO7Vs=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001A9C7D819324E7DADDD0B7CC573FB884C7994F5788833C890401757C4896E7336E18746601C89E",
+          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\default_Calculator1_REFSM_ly_fp0fMUACHxlnE030p02rrIiVDiDO6qO7Vs=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\default_Calculator1_REFSM_ly_fp0fMUACHxlnE030p02rrIiVDiDO6qO7Vs=.p12",
+          "storePassword": "0000001AEC1FFB521209952405ACC48F58E61A17EB4D63636E72CE212C4D6C05583B533D8A1B26DA6E4D"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "5.0.4(16)",
+        "compatibleSdkVersion": "5.0.4(16)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./products/entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "lib_foundation",
+      "srcPath": "./commons/lib_foundation"
+    },
+    {
+      "name": "module_standard_calculator",
+      "srcPath": "./components/module_standard_calculator"
+    },
+    {
+      "name": "module_date_calculation",
+      "srcPath": "./components/module_date_calculation"
+    },
+    {
+      "name": "module_base_apis",
+      "srcPath": "./components/module_base_apis"
+    },
+    {
+      "name": "business_home",
+      "srcPath": "./features/business_home",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "business_tool",
+      "srcPath": "./features/business_tool",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "business_mine",
+      "srcPath": "./features/business_mine",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bmi_calculator",
+      "srcPath": "./libs/bmi/bmi_calculator"
+    },
+    {
+      "name": "exchange_calculator",
+      "srcPath": "./libs/exchange/exchange_calculator"
+    },
+    {
+      "name": "app_setting",
+      "srcPath": "./libs/setting/app_setting"
+    }
+  ]
+}

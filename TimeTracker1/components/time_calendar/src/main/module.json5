@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "time_calendar",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}

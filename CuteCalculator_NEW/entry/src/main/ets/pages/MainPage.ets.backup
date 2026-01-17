@@ -1,0 +1,312 @@
+/*
+ * MainPage - 可爱计算器主页面
+ * Main Calculator Page
+ */
+
+import { ResultDisplay } from '../components/ResultDisplay';
+import { CharacterDecor } from '../components/CharacterDecor';
+import { CuteCalcKeyboard } from '../components/CuteCalcKeyboard';
+import CalculateUtil from '../common/CalculateUtil';
+import { CalcConstants, CharacterState } from '../common/Constant';
+import { ThemeColors } from '../common/ThemeConfig';
+import { HapticUtils } from '../utils/HapticUtils';
+import PreferencesUtils from '../utils/PreferencesUtils';
+import { common } from '@kit.AbilityKit';
+
+@Entry
+@Component
+struct MainPage {
+  @State expression: string = '';           // 当前输入表达式
+  @State result: string = '0';              // 计算结果
+  @State characterState: CharacterState = CharacterState.NORMAL;
+  @State vibrateEnabled: boolean = true;    // 振动开关
+  @State buttonPressCounter: number = 0;    // 按键计数器，用于触发角色动画
+  
+  // 华为广告配置（符合官方规范）
+  @State adHeight: number = 0;              // 广告位高度 (0=无广告, 73=小横幅57vp+边距, 160=大横幅144vp+边距)
+  @State adLoaded: boolean = false;         // 广告加载状态
+  private adRefreshTimer: number = -1;      // 广告刷新定时器
+
+  async aboutToAppear(): Promise<void> {
+    // 初始化Preferences
+    await PreferencesUtils.init(getContext(this) as common.UIAbilityContext);
+    this.vibrateEnabled = await PreferencesUtils.getVibrateEnabled();
+
+    // 初始化华为广告
+    this.initHuaweiAd();
+  }
+
+  aboutToDisappear() {
+    // 清理广告刷新定时器
+    if (this.adRefreshTimer !== -1) {
+      clearInterval(this.adRefreshTimer);
+      this.adRefreshTimer = -1;
+    }
+  }
+
+  /**
+   * 初始化华为广告
+   * TODO: 需在 oh-package.json5 中添加 "@kit.AdsKit": "^1.0.0"
+   * TODO: 需在 module.json5 中添加 OAID 权限
+   */
+  private initHuaweiAd() {
+    // TODO: 接入华为广告SDK
+    // 参考代码:
+    // import { advertising } from '@kit.AdsKit';
+    // import { deviceAttributes } from '@kit.DeviceAttributesKit';
+    //
+    // try {
+    //   // 1. 获取设备OAID（提升广告填充率）
+    //   const oaid = await deviceAttributes.getOAID();
+    //
+    //   // 2. 配置广告参数（必须符合华为规范）
+    //   const adParams = {
+    //     adType: 8,                    // 横幅广告类型
+    //     adId: 'testw6vs28auh3',       // 测试ID（上线前替换正式ID）
+    //     adHeight: 144,                // 57 或 144 (vp)
+    //     oaid: oaid,                   // 设备OAID
+    //     refreshTime: 60000            // 刷新间隔 30000~120000ms
+    //   };
+    //
+    //   // 3. 加载广告
+    //   advertising.showBannerAd(adParams, (error, data) => {
+    //     if (!error) {
+    //       this.adLoaded = true;
+    //       // 根据实际广告高度设置容器高度
+    //       // 小横幅: 57vp + 16vp边距 = 73vp
+    //       // 大横幅: 144vp + 16vp边距 = 160vp
+    //       this.adHeight = adParams.adHeight === 57 ? 73 : 160;
+    //     }
+    //   });
+    // } catch (error) {
+    //   console.error('华为广告初始化失败:', error);
+    // }
+
+    // 临时测试: 模拟广告加载（开发阶段使用）
+    setTimeout(() => {
+      this.adLoaded = true;
+      this.adHeight = 160;  // 使用大横幅尺寸 (144vp + 16vp)
+    }, 1000);
+  }
+
+  build() {
+    Column() {
+      // 顶部标题栏（固定）
+      Row() {
+        Text('可爱计算器')
+          .fontSize(20)
+          .fontColor(ThemeColors.TEXT_PRIMARY)
+          .fontWeight(FontWeight.Medium)
+
+        Blank()
+
+        // 历史记录按钮
+        Image($r('app.media.ic_history'))
+          .width(24)
+          .height(24)
+          .onClick(() => {
+            // TODO: 跳转到历史记录页面
+          })
+
+        // 设置按钮
+        Image($r('app.media.ic_settings'))
+          .width(24)
+          .height(24)
+          .margin({ left: 16 })
+          .onClick(() => {
+            // TODO: 跳转到设置页面
+          })
+      }
+      .width('100%')
+      .height(56)
+      .padding({ left: 20, right: 20 })
+
+      // 主内容区域（可滚动）
+      Scroll() {
+        Column() {
+          // 卡通角色装饰
+          CharacterDecor({
+            currentState: this.characterState,
+            buttonPressCounter: this.buttonPressCounter
+          })
+
+          // 结果显示区域
+          ResultDisplay({
+            expression: this.expression,
+            result: this.result
+          })
+
+          // 可爱键盘
+          CuteCalcKeyboard({
+            onButtonClick: (value: string) => {
+              this.handleButtonClick(value);
+            }
+          })
+        }
+        .width('100%')
+      }
+      .width('100%')
+      .layoutWeight(1)  // 占据剩余空间
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)  // 隐藏滚动条
+
+      // 底部广告位（固定在底部，带安全区）
+      this.buildAdContainer()
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor(ThemeColors.BG_MAIN)
+  }
+
+  /**
+   * 构建华为广告容器
+   * 符合官方规范: 仅支持 360vp×57vp 或 360vp×144vp
+   */
+  @Builder
+  buildAdContainer() {
+    Column() {
+      if (this.adLoaded && this.adHeight > 0) {
+        // 华为横幅广告容器
+        Column() {
+          // TODO: 替换为实际的华为广告组件
+          // 示例: HuaweiBannerAd({ adId: 'testw6vs28auh3', height: 144 })
+          
+          // 临时占位（开发阶段）
+          Column() {
+            Text('🎯 华为横幅广告位')
+              .fontSize(14)
+              .fontColor('#8E8E93')
+              .fontWeight(FontWeight.Medium)
+            Text(this.adHeight === 73 ? '360vp × 57vp' : '360vp × 144vp')
+              .fontSize(12)
+              .fontColor('#C7C7CC')
+              .margin({ top: 4 })
+            Text('adId: testw6vs28auh3')
+              .fontSize(10)
+              .fontColor('#E5E5EA')
+              .margin({ top: 2 })
+          }
+          .width('100%')
+          .height(this.adHeight - 16)  // 减去上下内边距 (8vp × 2)
+          .justifyContent(FlexAlign.Center)
+          .backgroundColor('rgba(255, 245, 230, 0.8)')  // 奶油色半透明
+          .borderRadius({ topLeft: 16, topRight: 16 })
+          .border({
+            width: { top: 1 },
+            color: 'rgba(255, 140, 66, 0.2)'
+          })
+          .shadow({
+            radius: 8,
+            color: 'rgba(255, 140, 66, 0.08)',
+            offsetX: 0,
+            offsetY: -2
+          })
+        }
+        .width('100%')
+        .padding({ top: 8, bottom: 8 })
+      }
+    }
+    .width('100%')
+    .padding({ bottom: 20 })  // 底部安全区，避免与系统导航栏重叠
+    .animation({
+      duration: 300,
+      curve: Curve.EaseInOut
+    })
+  }
+
+  /**
+   * 处理按钮点击
+   */
+  private handleButtonClick(value: string): void {
+    // 触发角色手臂动画（通过增加计数器）
+    this.buttonPressCounter++;
+
+    // 振动反馈
+    if (this.vibrateEnabled) {
+      if (value === CalcConstants.EQUAL) {
+        HapticUtils.equalVibrate();
+      } else {
+        HapticUtils.buttonVibrate();
+      }
+    }
+
+    // 根据按钮类型处理
+    if (value === CalcConstants.CLEAR) {
+      this.handleClear();
+    } else if (value === CalcConstants.DELETE) {
+      this.handleDelete();
+    } else if (value === CalcConstants.EQUAL) {
+      this.handleEqual();
+    } else {
+      this.handleInput(value);
+    }
+  }
+
+  /**
+   * 处理清空
+   */
+  private handleClear(): void {
+    this.expression = '';
+    this.result = '0';
+    this.characterState = CharacterState.NORMAL;
+  }
+
+  /**
+   * 处理删除
+   */
+  private handleDelete(): void {
+    if (this.expression.length > 0) {
+      this.expression = this.expression.slice(0, -1);
+      if (this.expression.length === 0) {
+        this.result = '0';
+        this.characterState = CharacterState.NORMAL;
+      }
+    }
+  }
+
+  /**
+   * 处理输入
+   */
+  private handleInput(value: string): void {
+    // 更新表达式
+    if (this.expression === '0' && value !== '.') {
+      this.expression = value;
+    } else {
+      this.expression += value;
+    }
+    
+    this.characterState = CharacterState.CALCULATING;
+
+    // 实时显示输入
+    this.result = this.expression;
+  }
+
+  /**
+   * 处理等号
+   */
+  private handleEqual(): void {
+    if (this.expression.length === 0) {
+      return;
+    }
+
+    try {
+      // 使用简化的 CalculateUtil 计算
+      this.result = CalculateUtil.calculate(this.expression);
+      
+      if (this.result === 'Error') {
+        this.characterState = CharacterState.ERROR;
+        if (this.vibrateEnabled) {
+          HapticUtils.errorVibrate();
+        }
+      } else {
+        this.characterState = CharacterState.RESULT;
+      }
+    } catch (error) {
+      this.result = 'Error';
+      this.characterState = CharacterState.ERROR;
+      if (this.vibrateEnabled) {
+        HapticUtils.errorVibrate();
+      }
+    }
+  }
+}

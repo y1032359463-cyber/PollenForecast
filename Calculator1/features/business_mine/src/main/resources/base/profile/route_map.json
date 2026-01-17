@@ -1,0 +1,28 @@
+{
+  "routerMap": [
+    {
+      "name": "SettingPage",
+      "pageSourceFile": "src/main/ets/pages/SettingPageEntry.ets",
+      "buildFunction": "SettingPageBuilder",
+      "data": {
+        "description": "设置页面"
+      }
+    },
+    {
+      "name": "AgreementPrivacy",
+      "pageSourceFile": "src/main/ets/components/AgreementPrivacy.ets",
+      "buildFunction": "AgreementPrivacyBuilder",
+      "data": {
+        "description": "this is AgreementPrivacy"
+      }
+    },
+    {
+      "name": "AboutPage",
+      "pageSourceFile": "src/main/ets/components/AboutPage.ets",
+      "buildFunction": "AboutPageBuilder",
+      "data": {
+        "description": "this is AboutPage"
+      }
+    }
+  ]
+}

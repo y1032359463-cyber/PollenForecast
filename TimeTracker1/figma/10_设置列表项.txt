@@ -1,0 +1,37 @@
+Design System Context:
+- App: TimeTracker - Time logging app for hourly workers
+- Style: Minimalist, clean, inspired by Apple Calendar and HarmonyOS Design Language
+- Primary Color: HarmonyOS Blue (#2196F3)
+- Typography: HarmonyOS Sans font family
+- Spacing: 12px between elements
+- Border Radius: 10px (cards)
+- Shadows: 0 2px 8px rgba(0,0,0,0.06)
+
+Create a settings list item component.
+Size: 328px × 56px.
+
+Layout:
+- Background: white
+- Border: 1px solid #E0E0E0
+- Border radius: 10px
+- Padding: 12px 16px
+- Shadow: 0 2px 8px rgba(0,0,0,0.06)
+
+Content Structure (left to right):
+1. Icon: 24px, #757575
+2. Label: 16px, regular, #212121
+3. Value (optional): 14px, regular, #9E9E9E, right aligned
+4. Arrow: → (16px, #BDBDBD), far right
+
+Horizontal spacing: 12px between elements
+
+Create 6 variants:
+1. 💵 "Hourly Wage" → "¥30/hr" →
+2. 📅 "Work Cycle" → "Weekly" →
+3. 🎨 "Theme" → "Auto" →
+4. 💾 "Backup Data" → →
+5. 📱 "About" → "v1.0.0" →
+6. ⚙️ "Advanced" → →
+
+Add hover state: background changes to #F5F5F5
+Add pressed state: background changes to #EEEEEE

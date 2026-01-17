@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\default_CuteCalculator_NEW_EICOuqTNG0N_lwEVak9PuMu3UZGFYrQkWm6kQIVFSsM=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001AB96643C5B56181931EE5915AB3809C651E44631CCB570EC8E9612BA1C29CD8732AC39DD4165B",
+          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\default_CuteCalculator_NEW_EICOuqTNG0N_lwEVak9PuMu3UZGFYrQkWm6kQIVFSsM=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\default_CuteCalculator_NEW_EICOuqTNG0N_lwEVak9PuMu3UZGFYrQkWm6kQIVFSsM=.p12",
+          "storePassword": "0000001A2733616BB2452AD7E90BF5C1CDDE8360E99925E8D6A8362E02173CA51D3718FF82A9087FC2EB"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

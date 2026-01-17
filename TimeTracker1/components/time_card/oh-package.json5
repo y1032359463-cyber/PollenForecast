@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/time_card",
+  "version": "1.0.0",
+  "description": "Card components for TimeTracker",
+  "main": "src/main/ets/Index.ets",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ohos/commonlib": "file:../../commons/commonlib"
+  }
+}

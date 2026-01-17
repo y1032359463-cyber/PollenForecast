@@ -1,0 +1,7 @@
+{
+  "name": "exifparser",
+  "version": "1.0.0",
+  "description": "Native C++ EXIF parser module",
+  "main": "./index.ets",
+  "types": "./index.d.ts"
+}

@@ -1,0 +1,36 @@
+Design a bottom navigation bar component for the TimeTracker work-hours app.
+
+Component size: 360×76px (includes 20px bottom safe area)
+Content height: 56px tab area + 20px safe area padding; background must remain pure white (#FFFFFF) with rounded top corners optional.
+
+Tabs:
+1. 工时记录 (active by default)
+   - Icon: Line-style clock symbol (24×24px, stroke 2px, IconPark linear style)
+   - Label: "工时记录" (Chinese)
+   - Color: EXACTLY #2196F3 for icon and text
+2. 数据统计
+   - Icon: Line-style bar chart/analytics (24×24px, stroke 2px)
+   - Label: "数据统计"
+   - Color: #9E9E9E
+3. 个人中心
+   - Icon: Line-style user/person (24×24px, stroke 2px)
+   - Label: "个人中心"
+   - Color: #9E9E9E
+
+Layout rules:
+- Tabs evenly distributed (120px width each), vertically centered alignment.
+- Icon above text with 4px spacing.
+- Tab label typography: 12px HarmonyOS Sans SC, active weight 600, inactive weight 400, no letter spacing.
+- Touch area: full tab width × 56px height; pressed state scale 0.95 with 150ms transition and opacity 0.8.
+
+Visual details:
+- Background: #FFFFFF.
+- Top border: 1px line #E0E0E0 plus subtle shadow 0 -1px 3px rgba(0,0,0,0.05).
+- Safe area: 20px padding at bottom (show as blank space).
+- No extra page content: focus only on the navigation component, no finance text or cards.
+- Overall style must match HarmonyOS native navigation.
+
+Interaction states:
+- Active tab: icon/text #2196F3, bold.
+- Inactive tabs: icon/text #9E9E9E, regular weight.
+- On press: scale 0.95 and opacity 0.8, easing 150ms.

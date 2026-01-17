@@ -1,0 +1,9 @@
+{
+  "name": "@ohos/navigation",
+  "version": "1.0.0",
+  "description": "Bottom navigation component for TimeTracker",
+  "main": "src/main/ets/Index.ets",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
+}

@@ -1,0 +1,74 @@
+Create a mobile time tracking app screen for HarmonyOS.
+Screen size: 360px × 812px (full height including system areas).
+Content area: 360px × 736px (excluding 76px bottom navigation with safe area).
+
+IMPORTANT: Use EXACTLY these colors - #2196F3 for primary blue (NOT #3B82F6 or any other blue).
+
+Layout Structure:
+
+1. Header Section (56px height):
+   - Background: white (#FFFFFF)
+   - Title: "Time Log" (24px, bold, #212121) 
+   - Right button: Calendar icon (24px, #757575)
+   - Left/right padding: 16px
+
+2. Month Selector (48px height):
+   - Background: #F5F5F5
+   - Current month: "November 2025" (18px, semibold, #212121)
+   - Left arrow: ← (24px, #757575)
+   - Right arrow: → (24px, #757575)
+   - Center aligned
+   - Border radius: 8px
+   - Margin: 16px horizontal
+
+3. Calendar Grid:
+   - 7 columns (Mon-Sun header)
+   - Week header: 12px, #757575, 32px height
+   - Day cells: 48px × 48px (MUST be 48px minimum for touch accessibility)
+   - Cell states:
+     * Default: white background, 1px solid #E0E0E0 border
+     * Today: blue border (2px solid #2196F3) - USE EXACT COLOR #2196F3
+     * Selected: blue background (#2196F3), white text - USE EXACT COLOR #2196F3
+     * Has data: small blue dot below date (6px diameter, #2196F3) - USE EXACT COLOR
+   - Cell content: Date (16px, center aligned, #212121)
+   - Gap: 4px between cells
+   - Padding: 16px
+   - Border radius: 8px for today/selected states
+
+4. Summary Card (120px height):
+   - Background: linear gradient (#2196F3 to #64B5F6) - START WITH EXACT #2196F3
+   - Border radius: 12px
+   - Padding: 16px
+   - Margin: 16px horizontal
+   - Content layout (horizontal):
+     * Left side: "This Month" (14px, white 80% opacity)
+                 "128 hours" (32px, bold, white)
+                 "¥3,840" (20px, semibold, white 90% opacity)
+     * Right side: Clock icon (48px, white 60% opacity)
+   - Shadow: 0 4px 12px rgba(33, 150, 243, 0.3)
+
+5. Bottom Navigation (76px total height):
+   - Navigation bar height: 56px
+   - Safe area padding: 20px bottom (for HarmonyOS gesture navigation)
+   - 3 tabs with equal width (120px each)
+   - Tab 1: Clock icon (24px) + "工时记录" (12px) - Active state
+   - Tab 2: Chart icon (24px) + "数据统计" (12px) - Inactive
+   - Tab 3: User icon (24px) + "个人中心" (12px) - Inactive
+   - Active state: #2196F3 color (icon + text) - USE EXACT COLOR #2196F3
+   - Inactive state: #9E9E9E color
+   - Background: white (#FFFFFF)
+   - Top border: 1px solid #E0E0E0
+   - Position: Fixed at bottom with 20px bottom padding for system gestures
+
+Page Background: #F8F9FA
+
+Note: Content should be scrollable, navigation bar stays fixed at bottom with safe area.
+
+Design System:
+- App: TimeTracker - Time logging app for hourly workers
+- Primary Color: HarmonyOS Blue (#2196F3)
+- Typography: HarmonyOS Sans font family
+- Spacing: 8px grid system (all spacing must be multiples of 4px)
+- Border Radius: Standard 10px (cards, buttons)
+- Icons: IconPark linear style + HarmonyOS Symbol
+- Style: Minimalist, clean, inspired by Apple Calendar

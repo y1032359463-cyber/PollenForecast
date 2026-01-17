@@ -1,0 +1,141 @@
+{
+  "app": {
+    "appName": "健康管理",
+    "appId": "com.harmonyos.healthy_life",
+    "version": "1.0.0",
+    "description": "专注于健康习惯养成的鸿蒙应用"
+  },
+  "theme": {
+    "primaryColor": "#00C853",
+    "primaryDark": "#00A344",
+    "primaryLight": "#69F0AE",
+    "accentColor": "#73D13D",
+    "backgroundColor": "#F8F9FA",
+    "surfaceColor": "#FFFFFF",
+    "surfaceVariant": "#F5F5F5",
+    "cardBackgroundColor": "#FFFFFF",
+    "outlineColor": "#E0E0E0",
+    "textPrimaryColor": "#212121",
+    "textSecondaryColor": "#757575",
+    "textDisabledColor": "#BDBDBD",
+    "successColor": "#00C853",
+    "warningColor": "#FFC107",
+    "errorColor": "#FF5252",
+    "infoColor": "#2196F3",
+    "taskColors": {
+      "getup": "#FF6B6B",
+      "water": "#4ECDC4",
+      "apple": "#FF6B35",
+      "smile": "#FFD93D",
+      "brush": "#95E1D3",
+      "sleep": "#6C5CE7"
+    }
+  },
+  "ui": {
+    "fontSize": {
+      "xs": 12,
+      "sm": 14,
+      "base": 16,
+      "lg": 18,
+      "xl": 20,
+      "xxl": 24,
+      "xxxl": 28
+    },
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 12,
+      "base": 16,
+      "lg": 20,
+      "xl": 24,
+      "xxl": 32,
+      "xxxl": 48
+    },
+    "borderRadius": {
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 20,
+      "xxl": 24,
+      "round": 999
+    },
+    "iconSize": {
+      "sm": 16,
+      "base": 24,
+      "lg": 32,
+      "xl": 48
+    },
+    "cardBorderRadius": 16,
+    "cardPadding": 16
+  },
+  "database": {
+    "dbName": "healthylife.db",
+    "version": 1,
+    "tableName": "taskInfo"
+  },
+  "taskTypes": [
+    {
+      "id": 1,
+      "name": "早起",
+      "icon": "getup_task_icon",
+      "unit": "次",
+      "targetValue": 1,
+      "step": 1,
+      "isTimeBased": true
+    },
+    {
+      "id": 2,
+      "name": "喝水",
+      "icon": "drink_task_icon",
+      "unit": "杯",
+      "targetValue": 8,
+      "step": 1,
+      "isTimeBased": false
+    },
+    {
+      "id": 3,
+      "name": "吃苹果",
+      "icon": "apple_task_icon",
+      "unit": "个",
+      "targetValue": 1,
+      "step": 1,
+      "isTimeBased": false
+    },
+    {
+      "id": 4,
+      "name": "每日微笑",
+      "icon": "smile_task_icon",
+      "unit": "次",
+      "targetValue": 1,
+      "step": 1,
+      "isTimeBased": true
+    },
+    {
+      "id": 5,
+      "name": "每日刷牙",
+      "icon": "brushTeeth_task_icon",
+      "unit": "次",
+      "targetValue": 2,
+      "step": 1,
+      "isTimeBased": false
+    },
+    {
+      "id": 6,
+      "name": "早睡",
+      "icon": "sleep_task_icon",
+      "unit": "次",
+      "targetValue": 1,
+      "step": 1,
+      "isTimeBased": true
+    }
+  ],
+  "features": {
+    "enableDataAnalytics": true,
+    "enableAchievements": true,
+    "enableCalendar": true,
+    "enableReminders": true,
+    "enableThemeCustomization": true,
+    "enableDataExport": true,
+    "enableSocialSharing": false
+  }
+}

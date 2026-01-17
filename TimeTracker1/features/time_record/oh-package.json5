@@ -1,0 +1,14 @@
+{
+  "name": "@ohos/time_record",
+  "version": "1.0.0",
+  "description": "Time record feature module for TimeTracker",
+  "main": "Index.ets",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ohos/commonlib": "file:../../commons/commonlib",
+    "@ohos/time_calendar": "file:../../components/time_calendar",
+    "@ohos/time_card": "file:../../components/time_card",
+    "@ohos/navigation": "file:../../components/navigation"
+  }
+}

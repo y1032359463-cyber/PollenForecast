@@ -1,0 +1,44 @@
+Design a calendar day cell component for time tracking app.
+Canvas: 48px × 48px.
+
+Component States:
+
+1. Default State:
+   - Background: white
+   - Border: 1px solid #E0E0E0
+   - Border radius: 8px
+   - Date number: 16px, regular, #212121, center aligned
+   - Shadow: none
+
+2. Today State:
+   - Background: white
+   - Border: 2px solid #2196F3
+   - Date color: #2196F3, bold
+   - Border radius: 8px
+
+3. Selected State:
+   - Background: #2196F3
+   - Border: none
+   - Date color: white, bold
+   - Border radius: 8px
+   - Shadow: 0 2px 8px rgba(33, 150, 243, 0.3)
+
+4. Has Data State (add to any state):
+   - Small dot below date
+   - Dot: 6px diameter, #2196F3, center aligned
+   - Position: 4px below date number
+
+5. Inactive Date (other months):
+   - Background: transparent
+   - Border: none
+   - Date color: #BDBDBD
+   - Border radius: 8px
+
+Design System:
+- App: TimeTracker
+- Primary Color: #2196F3
+- Typography: HarmonyOS Sans
+- Style: Minimalist calendar cell
+
+Create 5 variants showing all states.
+记得是中文应用

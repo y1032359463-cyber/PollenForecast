@@ -1,0 +1,125 @@
+Design cute cat character illustrations with 4 different emotional states AND animated arms for a calculator app:
+
+## Character Dimensions
+- Canvas size: 300×300px (@3x scale, 900×900px actual)
+- Export as: PNG with transparent background
+- Style: cute, cartoon, friendly
+
+## Layered Character Design (IMPORTANT)
+- **TWO SEPARATE LAYERS** for animation support:
+  1. **Body layer** (cat_xxx_body.png): head, face, torso (STATIC)
+  2. **Arms layer** (cat_xxx_arms.png): both arms with hands (ANIMATED)
+
+## Character Design Specifications
+- Animal: Cat (cute, round face, with visible arms/hands)
+- Color scheme: warm orange-pink tones (#FF8C42 to #FFB3C1)
+- Body: simple, minimalist style with VISIBLE ARMS
+- Eyes: large, expressive
+- Arms: short, cute, positioned at sides (ready to move up/down)
+- Hands: small, rounded paws
+- Overall style: kawaii/cute aesthetic, suitable for all ages
+
+## Arm Animation Design
+- Arms should be drawn in **neutral position** (slightly raised)
+- Design allows for up/down movement (20-30px range)
+- Both arms move together symmetrically
+- Movement simulates "pressing button" gesture
+
+## Four Emotional States
+
+### 1. Normal State (cat_normal.png)
+- Expression: happy, content, smiling
+- Eyes: open, bright, cheerful
+- Mouth: slight smile
+- Body language: relaxed, welcoming
+- Use case: default state, waiting for input
+
+### 2. Calculating State (cat_calculating.png)
+- Expression: thinking, concentrating
+- Eyes: slightly squinted or looking up-right
+- Mouth: small "o" shape or pursed
+- Additional element: small "?" or thought bubble
+- Body language: engaged, focused
+- Use case: during calculation, processing
+
+### 3. Result State (cat_result.png)
+- Expression: excited, happy, successful
+- Eyes: wide open, sparkling
+- Mouth: big smile or "^_^"
+- Additional element: small stars or sparkles around head
+- Body language: joyful, celebrating
+- Use case: showing successful calculation result
+
+### 4. Error State (cat_error.png)
+- Expression: confused, puzzled, concerned
+- Eyes: wide, surprised or dizzy (spirals optional)
+- Mouth: "o" shape (surprised)
+- Additional element: small sweat drop or question marks
+- Body language: apologetic, uncertain
+- Use case: calculation error or invalid input
+
+## Color Specifications
+- Primary fur color: #FF8C42 (warm orange)
+- Secondary details: #FFB3C1 (soft pink)
+- Accents: #FFFFFF (white for highlights)
+- Outline: #C17735 (brown, subtle)
+- Cheeks (blush): #FFB3C1 with transparency
+
+## Design Guidelines
+- Consistent character design across all 4 states
+- Only facial expression and small details change
+- Maintain same pose/position for smooth transitions
+- Simple, clean lines
+- Friendly, non-threatening appearance
+- Gender-neutral design
+
+## Style References
+- Inspiration: Japanese kawaii style, emoji, LINE stickers
+- Simplicity: minimal details, focus on expression
+- Cuteness: rounded shapes, soft colors, big eyes
+- Professionalism: polished, clean artwork
+
+## Export Requirements
+- Format: PNG
+- Resolution: @3x (900×900px)
+- **LAYERED EXPORT** - Each state needs TWO files:
+  * Body layer (static):
+    - cat_normal_body.png
+    - cat_calculating_body.png
+    - cat_result_body.png
+    - cat_error_body.png
+  * Arms layer (animated):
+    - cat_normal_arms.png
+    - cat_calculating_arms.png
+    - cat_result_arms.png
+    - cat_error_arms.png
+- Background: transparent for BOTH layers
+- Color profile: sRGB
+- Arm layer: ensure proper alignment with body layer
+- Optimize for: smooth animation transitions and layer compositing
+
+## Quality Standards
+- Consistent style across all 4 states
+- Clear emotional expressions
+- Professional illustration quality
+- Smooth edges (anti-aliased)
+- Exact color matching
+- Suitable for app store screenshots
+
+## Animation Considerations
+- Body layer: NO MOVEMENT, only facial expression changes
+- Arms layer: designed for vertical translation animation (up/down)
+- Arm pivot point: shoulder area (top of arm)
+- Movement range: 20-30px (@3x scale = 60-90px)
+- Design should support smooth fade transitions between states
+- Keep position/size consistent for morphing
+- Clear visual distinction between states
+- Expressions easily recognizable at small sizes (100×100pt display)
+
+## Layer Alignment Guide
+- Both layers must use same canvas size (300×300px @3x)
+- Align body and arms perfectly when layered
+- Arms should NOT overlap body outline (draw slightly in front)
+- Export with proper registration marks if needed
+
+Create all 4 cat character states as LAYERED illustrations (8 PNG files total: 4 bodies + 4 arms) with these exact specifications.

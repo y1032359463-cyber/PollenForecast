@@ -1,0 +1,101 @@
+{
+  "app": {
+    "appName": "学习打卡",
+    "appId": "com.harmonyos.study_tracker",
+    "version": "1.0.0",
+    "description": "专注于学习习惯养成的鸿蒙应用"
+  },
+  "theme": {
+    "primaryColor": "#1890FF",
+    "accentColor": "#40A9FF",
+    "backgroundColor": "#F0F5FF",
+    "cardBackgroundColor": "#FFFFFF",
+    "textPrimaryColor": "#333333",
+    "textSecondaryColor": "#999999",
+    "successColor": "#52C41A",
+    "warningColor": "#FAAD14",
+    "errorColor": "#FF4D4F"
+  },
+  "ui": {
+    "cardBorderRadius": 16,
+    "cardPadding": 16,
+    "spacing": 12,
+    "iconSize": 24,
+    "fontSize": {
+      "small": 12,
+      "normal": 14,
+      "large": 16,
+      "title": 20
+    }
+  },
+  "database": {
+    "dbName": "studytracker.db",
+    "version": 1,
+    "tableName": "taskInfo"
+  },
+  "taskTypes": [
+    {
+      "id": 1,
+      "name": "早读",
+      "icon": "study_morning_icon",
+      "unit": "分钟",
+      "targetValue": 30,
+      "step": 5,
+      "isTimeBased": false
+    },
+    {
+      "id": 2,
+      "name": "做题",
+      "icon": "exercise_icon",
+      "unit": "道",
+      "targetValue": 10,
+      "step": 1,
+      "isTimeBased": false
+    },
+    {
+      "id": 3,
+      "name": "背单词",
+      "icon": "vocabulary_icon",
+      "unit": "个",
+      "targetValue": 50,
+      "step": 10,
+      "isTimeBased": false
+    },
+    {
+      "id": 4,
+      "name": "专注学习",
+      "icon": "focus_icon",
+      "unit": "分钟",
+      "targetValue": 120,
+      "step": 15,
+      "isTimeBased": false
+    },
+    {
+      "id": 5,
+      "name": "复习笔记",
+      "icon": "review_icon",
+      "unit": "页",
+      "targetValue": 5,
+      "step": 1,
+      "isTimeBased": false
+    },
+    {
+      "id": 6,
+      "name": "晚自习",
+      "icon": "evening_study_icon",
+      "unit": "小时",
+      "targetValue": 2,
+      "step": 1,
+      "isTimeBased": true
+    }
+  ],
+  "features": {
+    "enableDataAnalytics": true,
+    "enableAchievements": true,
+    "enableCalendar": true,
+    "enableReminders": true,
+    "enableThemeCustomization": true,
+    "enableDataExport": true,
+    "enableSocialSharing": true
+  }
+}

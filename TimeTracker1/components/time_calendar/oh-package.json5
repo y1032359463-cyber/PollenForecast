@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/time_calendar",
+  "version": "1.0.0",
+  "description": "Calendar components for TimeTracker",
+  "main": "src/main/ets/Index.ets",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ohos/commonlib": "file:../../commons/commonlib"
+  }
+}

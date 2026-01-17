@@ -1,0 +1,131 @@
+Design a mobile app time entry page for TimeTracker app. This is where users log work hours with project type selection.
+
+CRITICAL REQUIREMENTS:
+1. This is a TIME TRACKING app, NOT a finance app. Focus on work hours, NOT expense/income categories.
+2. MUST include ALL 9 work types in a 3×3 grid (not 6, not 8, exactly 9)
+3. MUST include project name input field below the work type grid
+4. MUST include hourly rate input field below project name
+5. Use simple line-style icons (NOT emoji, NOT filled/colored icons)
+
+Screen: 360×780px, modal overlay style on white background.
+
+Layout:
+- Top bar (56px height):
+  - Close button (left, 44×44px touch area)
+  - "添加工时记录" title (center, 18px bold) — MUST use Chinese
+  - Save button (right, checkmark icon, 44×44px touch area, EXACTLY #2196F3)
+  
+- Time duration display (100px height):
+  - Large display: "0小时 0分钟" (40px bold, #212121) — MUST show Chinese units
+  - Label below: "工作时长" (14px, #757575)
+  
+- Time picker section (160px height, background #F8F9FA, 12px border radius):
+  - "时间选择" section title (14px medium, #757575, 16px margin-bottom)
+  - Start time row: 
+    - Clock icon (20×20px, #2196F3, IconPark linear style)
+    - "开始时间" label (16px, #212121)
+    - "选择时间" or "9:00 上午" value (16px, #2196F3, right-aligned)
+    - Row height 48px (MUST be 48px minimum for touch)
+  - End time row: 
+    - Clock icon (20×20px, #2196F3)
+    - "结束时间" label (16px, #212121)
+    - "选择时间" or "5:00 下午" value (16px, #2196F3, right-aligned)
+    - Row height 48px
+  - Duration result (centered, light blue background #E3F2FD, 8px padding):
+    - "时长: 8小时 0分钟" (14px, #2196F3)
+
+- Date picker (56px height):
+  - "日期" section title (14px medium, #757575, 8px margin-bottom)
+  - Calendar row:
+    - Calendar icon (20×20px, #2196F3)
+    - "今天, 11月14日, 2025" (16px, #212121)
+    - Row height 48px, background #F5F5F5, 8px border radius
+
+- Work details section (280px height):
+  - "工作详情" section title (14px medium, #757575, 16px margin-bottom)
+  - Project type selector (3×3 grid, 12px gap between items):
+    - MUST show all 9 types in 3 rows × 3 columns layout
+    - Each item: 60×60px rounded square (12px radius), background #F5F5F5
+    - 9 types with simple line-style icons (24×24px, centered):
+      Row 1: 
+        1. 开发 </> (Code brackets icon, #2196F3, 12px label below)
+        2. 设计 ✏ (Pen/Design icon, #9C27B0, 12px label below)
+        3. 测试 🐛 (Bug icon, #F44336, 12px label below)
+      Row 2:
+        4. 会议 👥 (People/Meeting icon, #FF9800, 12px label below)
+        5. 文档 📄 (Document icon, #4CAF50, 12px label below)
+        6. 学习 📚 (Book icon, #00BCD4, 12px label below)
+      Row 3:
+        7. 调研 🔍 (Search/Magnifier icon, #795548, 12px label below)
+        8. 沟通 💬 (Chat bubble icon, #E91E63, 12px label below)
+        9. 其他 ⋯ (Three dots icon, #9E9E9E, 12px label below)
+    - Selected state: border 2px solid #2196F3, icon color stays category color
+    - Label below icon: 12px regular, #757575, centered
+    - 12px vertical spacing between grid and input fields
+  - Project name input field (48px height, 16px margin-top):
+    - Briefcase icon (20×20px, #757575, left side)
+    - "项目名称" placeholder text (16px regular, #BDBDBD)
+    - Background #F5F5F5, 8px border radius
+    - 12px left padding after icon, 12px right padding
+  - Hourly rate input field (48px height, 8px margin-top):
+    - Currency symbol "¥" (20×20px, #757575, left side)
+    - Input showing "30" (16px regular, #212121)
+    - "/小时" suffix text (16px regular, #757575, right side)
+    - Background #F5F5F5, 8px border radius
+    - 12px left padding after icon, 12px right padding
+
+- Bottom action area (96px total height):
+  - "保存工作记录" button (48px height, width 100% - 32px horizontal margin):
+    - Background EXACTLY #2196F3 (USE EXACT COLOR #2196F3, NOT #1E88E5 or any variant)
+    - Text: "保存工作记录" (16px medium, white)
+    - Border radius 8px
+    - 16px margin from sides
+  - Safe area spacer (20px height) — IMPORTANT: For HarmonyOS gesture navigation
+
+Color scheme (USE EXACTLY THESE COLORS):
+- Primary: EXACTLY #2196F3 (Material Design Blue 500) — NOT #1E88E5, #1976D2, or #3B82F6
+- Background: #F8F9FA (light gray sections)
+- Card background: #FFFFFF
+- Input field: #F5F5F5
+- Text primary: #212121
+- Text secondary: #757575
+- Text hint: #BDBDBD
+- Border: #E0E0E0
+- Success accent: #4CAF50 (for earnings display)
+
+Typography:
+- Large display: 40px bold (time duration)
+- Page title: 18px bold
+- Section title: 14px medium
+- Input/Button text: 16px regular/medium
+- Category label: 12px regular
+- Helper text: 14px regular
+
+Icons: 
+- CRITICAL: Use simple LINE-STYLE icons (NOT emoji, NOT filled icons)
+- Style: Thin stroke (2px), minimal, clean lines
+- Sizes: 20×20px for input field icons, 24×24px for work type icons
+- Colors: Each work type has its own color (see above), input icons use #757575
+- Work type icons should be recognizable symbols (code brackets </>, pen, bug, people, document, book, magnifier, chat bubble, three dots)
+
+Touch targets:
+- ALL tappable elements MUST be minimum 48×48px
+- Time picker rows: 48px height
+- Category grid items: 60×60px (exceeds 48px minimum)
+- Top bar buttons: 44×44px (acceptable for header)
+
+Style: 
+- Clean HarmonyOS native style
+- Border radius: 8px for buttons/cards, 12px for sections
+- Card elevation: subtle shadow (0px 2px 8px rgba(0,0,0,0.08))
+- Clear visual hierarchy with section titles
+- Easy thumb reach for all interactive elements
+- Bottom safe area (20px) for gesture navigation
+
+Design System:
+- App: TimeTracker - Work hours tracking app for freelancers and hourly workers
+- Platform: HarmonyOS NEXT
+- Spacing: 8px grid system (8px, 16px, 24px, 32px)
+- Border Radius: 8px (buttons), 12px (sections)
+- Icons: IconPark linear style
+- Color: Material Design Blue 500 (#2196F3) — DO NOT use Tailwind colors

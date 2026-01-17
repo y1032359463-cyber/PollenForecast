@@ -1,0 +1,9 @@
+{
+  "name": "@ohos/time_chart",
+  "version": "1.0.0",
+  "description": "Chart components for TimeTracker",
+  "main": "src/main/ets/Index.ets",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
+}

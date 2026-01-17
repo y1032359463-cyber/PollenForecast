@@ -1,0 +1,214 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  /* 工时计应用配色方案 */
+  --background: #F8F9FA;
+  --foreground: #212121;
+  --card: #FFFFFF;
+  --card-foreground: #212121;
+  --popover: #FFFFFF;
+  --popover-foreground: #212121;
+  --primary: #2196F3;
+  --primary-dark: #1976D2;
+  --primary-light: #64B5F6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #212121;
+  --muted: #EEEEEE;
+  --muted-foreground: #757575;
+  --accent: #E0E0E0;
+  --accent-foreground: #212121;
+  --destructive: #FF5252;
+  --destructive-foreground: #FFFFFF;
+  --border: #E0E0E0;
+  --input: transparent;
+  --input-background: #FFFFFF;
+  --switch-background: #BDBDBD;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #2196F3;
+  /* 工作类型颜色 */
+  --color-dev: #2196F3;
+  --color-design: #9C27B0;
+  --color-test: #F44336;
+  --color-meeting: #FF9800;
+  --color-doc: #4CAF50;
+  --color-learn: #00BCD4;
+  --color-research: #795548;
+  --color-communicate: #E91E63;
+  --color-other: #9E9E9E;
+  /* 图表颜色 */
+  --chart-1: #2196F3;
+  --chart-2: #64B5F6;
+  --chart-3: #BBDEFB;
+  --chart-4: #1976D2;
+  --chart-5: #1565C0;
+  --radius: 0.625rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #212121;
+  --sidebar-primary: #2196F3;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F5F5F5;
+  --sidebar-accent-foreground: #212121;
+  --sidebar-border: #E0E0E0;
+  --sidebar-ring: #2196F3;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #FAFAFA;
+  --card: #1C1C1E;
+  --card-foreground: #FAFAFA;
+  --popover: #1C1C1E;
+  --popover-foreground: #FAFAFA;
+  --primary: #0A84FF;
+  --primary-dark: #0066CC;
+  --primary-light: #409CFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2C2C2E;
+  --secondary-foreground: #FAFAFA;
+  --muted: #2C2C2E;
+  --muted-foreground: #AEAEB2;
+  --accent: #38383A;
+  --accent-foreground: #FAFAFA;
+  --destructive: #FF453A;
+  --destructive-foreground: #FAFAFA;
+  --border: #38383A;
+  --input: transparent;
+  --ring: #0A84FF;
+  /* 工作类型颜色 - 深色模式 */
+  --color-dev: #0A84FF;
+  --color-design: #BF5AF2;
+  --color-test: #FF453A;
+  --color-meeting: #FF9F0A;
+  --color-doc: #32D74B;
+  --color-learn: #64D2FF;
+  --color-research: #AC8E68;
+  --color-communicate: #FF375F;
+  --color-other: #98989D;
+  /* 图表颜色 - 深色模式 */
+  --chart-1: #0A84FF;
+  --chart-2: #409CFF;
+  --chart-3: #64B5F6;
+  --chart-4: #0066CC;
+  --chart-5: #004C99;
+  --sidebar: #1C1C1E;
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #0A84FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2C2C2E;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #38383A;
+  --sidebar-ring: #0A84FF;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}

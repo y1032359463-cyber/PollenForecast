@@ -1,0 +1,51 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 占位背景 -->
+  <rect width="200" height="200" fill="#FFF5E6" rx="16"/>
+  
+  <!-- 可爱猫咪简笔画 -->
+  <g transform="translate(100, 100)">
+    <!-- 头部 -->
+    <circle cx="0" cy="-10" r="35" fill="#FF8C42"/>
+    
+    <!-- 左耳 -->
+    <path d="M-25,-35 L-30,-55 L-15,-40 Z" fill="#FF8C42"/>
+    
+    <!-- 右耳 -->
+    <path d="M25,-35 L30,-55 L15,-40 Z" fill="#FF8C42"/>
+    
+    <!-- 左眼 -->
+    <circle cx="-12" cy="-15" r="4" fill="#1C1C1E"/>
+    
+    <!-- 右眼 -->
+    <circle cx="12" cy="-15" r="4" fill="#1C1C1E"/>
+    
+    <!-- 鼻子 -->
+    <circle cx="0" cy="-5" r="3" fill="#1C1C1E"/>
+    
+    <!-- 嘴巴 -->
+    <path d="M0,-5 Q-8,5 -12,0 M0,-5 Q8,5 12,0" stroke="#1C1C1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+    
+    <!-- 胡须左 -->
+    <line x1="-20" y1="-8" x2="-35" y2="-10" stroke="#1C1C1E" stroke-width="1.5"/>
+    <line x1="-20" y1="-2" x2="-35" y2="0" stroke="#1C1C1E" stroke-width="1.5"/>
+    
+    <!-- 胡须右 -->
+    <line x1="20" y1="-8" x2="35" y2="-10" stroke="#1C1C1E" stroke-width="1.5"/>
+    <line x1="20" y1="-2" x2="35" y2="0" stroke="#1C1C1E" stroke-width="1.5"/>
+    
+    <!-- 身体 -->
+    <ellipse cx="0" cy="30" rx="30" ry="35" fill="#FF8C42"/>
+    
+    <!-- 前爪 -->
+    <ellipse cx="-12" cy="60" rx="8" ry="12" fill="#FF8C42"/>
+    <ellipse cx="12" cy="60" rx="8" ry="12" fill="#FF8C42"/>
+    
+    <!-- 尾巴 -->
+    <path d="M28,45 Q45,40 50,25" stroke="#FF8C42" stroke-width="12" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- 底部文字 -->
+  <text x="100" y="180" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#8E8E93">
+    占位图 - 等待真实猫咪图片
+  </text>
+</svg>

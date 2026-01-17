@@ -1,0 +1,37 @@
+Design System Context:
+- App: TimeTracker - Time logging app for hourly workers
+- Style: Minimalist, clean, inspired by Apple Calendar and HarmonyOS Design Language
+- Typography: HarmonyOS Sans font family
+- Spacing: 12px between elements
+- Border Radius: 12px (large cards)
+- Shadows: 0 4px 12px rgba(255, 165, 0, 0.3)
+
+Create a VIP upgrade banner component (interface only, non-functional).
+Size: 328px × 80px.
+
+Layout:
+- Background: gradient (#FFD700 to #FFA500), 135 degree angle
+- Border radius: 12px
+- Padding: 16px
+- Shadow: 0 4px 12px rgba(255, 165, 0, 0.3)
+
+Content Structure (horizontal layout):
+1. Left: Icon
+   - ⭐ emoji or star icon (32px)
+
+2. Center: Text Info
+   - Title: "Upgrade to VIP" (16px, bold, white)
+   - Subtitle: "Unlock premium features" (12px, regular, white 0.8 opacity)
+   - Vertical spacing: 4px
+
+3. Right: Button
+   - Text: "Learn More" (14px, white)
+   - Background: rgba(255, 255, 255, 0.3)
+   - Border radius: 16px (pill shape)
+   - Padding: 6px 12px
+
+Horizontal spacing: 12px between elements
+
+Create 2 variants:
+1. Default: "Upgrade to VIP" / "Unlock premium features"
+2. Promo: "VIP Sale 50% OFF" / "Limited time offer"

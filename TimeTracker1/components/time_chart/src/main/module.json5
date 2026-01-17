@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "time_chart",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}

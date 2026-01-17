@@ -1,0 +1,14 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/merchant/MerchantHome",
+    "pages/merchant/BusinessManage",
+    "pages/merchant/QRCodePage",
+    "pages/merchant/QRCodeSettings",
+    "pages/merchant/HistoryPage",
+    "pages/consumer/ConsumerHome",
+    "pages/consumer/BusinessTypeSelect",
+    "pages/consumer/ResourceList",
+    "pages/consumer/RentalDetail"
+  ]
+}

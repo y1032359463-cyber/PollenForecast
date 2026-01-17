@@ -1,0 +1,57 @@
+Design a weekly work hours bar chart component for time tracking app statistics page.
+
+Component size: 328px × 240px
+
+Layout:
+- Chart title: "Weekly Trend" (18px, bold, #212121) at top
+- Bar chart area (328×180px):
+  - 7 vertical bars representing Mon-Sun
+  - Bar width: 32px
+  - Bar spacing: 12px between bars
+  - Y-axis: 0-10 hours scale on left (12px, #9E9E9E)
+  - X-axis: Weekday labels below (12px, #9E9E9E)
+- Each bar shows:
+  - Height proportional to hours worked (max 10 hours)
+  - Hour value above bar (14px, #212121)
+  - Example: Mon:8h, Tue:7.5h, Wed:9h, Thu:8h, Fri:6h, Sat:0h, Sun:0h
+
+Bar styling:
+- Color: Primary blue (#2196F3)
+- Border radius: 4px top corners (rounded top)
+- Gradient: Subtle vertical gradient from #2196F3 to #64B5F6
+- Shadow: 0 2px 4px rgba(33, 150, 243, 0.2)
+- Hover state: Slightly darker (#1976D2)
+
+Grid lines:
+- Horizontal guide lines: 1px, #E0E0E0, dashed
+- Lines at 2h, 4h, 6h, 8h, 10h marks
+- Very subtle, background helper lines
+
+Color scheme:
+- Bar color: #2196F3
+- Bar gradient end: #64B5F6
+- Background: White (#FFFFFF)
+- Text: Dark gray (#212121)
+- Axis labels: Medium gray (#9E9E9E)
+- Grid lines: Light gray (#E0E0E0)
+
+Typography:
+- Title: 18px bold (HarmonyOS Sans)
+- Hour values: 14px bold
+- Axis labels: 12px regular
+- Y-axis scale: 12px regular
+
+Chart background:
+- White background
+- Border radius: 12px
+- Padding: 20px
+- Shadow: 0 2px 8px rgba(0,0,0,0.06)
+
+Style: Clean, modern data visualization, iOS/HarmonyOS design language, easy to read at a glance, professional productivity app aesthetic.
+
+Design System:
+- App: TimeTracker
+- Primary Color: #2196F3
+- Spacing: 12px between bars
+- Focus: Visual clarity and data accuracy
+记得是中文应用

@@ -1,0 +1,36 @@
+Design System Context:
+- App: TimeTracker - Time logging app for hourly workers
+- Style: Minimalist, clean, inspired by Apple Calendar and HarmonyOS Design Language
+- Primary Color: HarmonyOS Blue (#2196F3)
+- Typography: HarmonyOS Sans font family
+- Spacing: 8px grid system (all spacing must be multiples of 4px)
+- Border Radius: 12px (large cards)
+- Shadows: 0 4px 12px rgba(33, 150, 243, 0.3)
+
+Create a user profile card component.
+Size: 328px × 140px.
+
+Layout:
+- Background: gradient (#2196F3 to #64B5F6), 135 degree angle
+- Border radius: 12px
+- Padding: 20px
+- Shadow: 0 4px 12px rgba(33, 150, 243, 0.3)
+
+Content Structure (horizontal layout):
+1. Left: Avatar
+   - Size: 64px × 64px circle
+   - Background: white
+   - Icon: User symbol (32px, #2196F3)
+   - Centered icon
+
+2. Right: User Info (12px gap from avatar)
+   - Name: "User Name" (20px, bold, white)
+   - Role: "Hourly Worker" (14px, regular, white 0.8 opacity)
+   - Member since: "Since Nov 2025" (12px, regular, white 0.7 opacity)
+   - Vertical spacing: 4px between lines
+
+Create 3 variants with different user data:
+1. Default: "User Name" / "Hourly Worker" / "Since Nov 2025"
+2. Long name: "Wang Xiaoming" / "Freelancer" / "Since Jan 2025"
+3. VIP user: "John Doe" / "VIP Member ⭐" / "Since Oct 2024"
+记得是个中文应用

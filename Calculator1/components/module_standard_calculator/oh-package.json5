@@ -1,0 +1,12 @@
+{
+  "name": "module_standard_calculator",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "module_base_apis": "file:../module_base_apis",
+    "lib_foundation": "file:../../commons/lib_foundation"
+  }
+}

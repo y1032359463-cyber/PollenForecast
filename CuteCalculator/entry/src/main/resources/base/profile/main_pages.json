@@ -1,0 +1,12 @@
+{
+  "src": [
+    "pages/MainPage",
+    "pages/HistoryPage",
+    "pages/SettingsPage",
+    "pages/CharacterSelectPage",
+    "pages/ThemeSelectPage",
+    "pages/ButtonShapeSelectPage",
+    "pages/KeyboardThemeSelectPage",
+    "pages/ButtonBorderSelectPage"
+  ]
+}

@@ -1,0 +1,178 @@
+// TimeTracker1 项目构建配置 - 测试 Claude 编辑能力
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\Lenovo\\.ohos\\config\\default_TimeTracker1_Vb_BsnHyOtivUvvTPA6p3KquLuoS__b14EJj2y-jlZs=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B1CF4B555FC41267F13E5CC6F33912C8DFD81389A8C1D477DC92639E0D4105F1E6D58594A2BE072",
+          "profile": "C:\\Users\\Lenovo\\.ohos\\config\\default_TimeTracker1_Vb_BsnHyOtivUvvTPA6p3KquLuoS__b14EJj2y-jlZs=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\Lenovo\\.ohos\\config\\default_TimeTracker1_Vb_BsnHyOtivUvvTPA6p3KquLuoS__b14EJj2y-jlZs=.p12",
+          "storePassword": "0000001B78DDC007068165B45FB16F3DCE002C5C6B8C30E94AC0295FF8BCE842BF6E222AB8831CCCEE4A86"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compileSdkVersion": "6.0.0(20)",
+        "targetSdkVersion": "6.0.0(20)",
+        "compatibleSdkVersion": "6.0.0(20)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "commonlib",
+      "srcPath": "./commons/commonlib",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "navigation",
+      "srcPath": "./components/navigation",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "time_calendar",
+      "srcPath": "./components/time_calendar",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "time_card",
+      "srcPath": "./components/time_card",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "time_chart",
+      "srcPath": "./components/time_chart",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "srcPath": "./features/home",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "statistics",
+      "srcPath": "./features/statistics",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "time_record",
+      "srcPath": "./features/time_record",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "assets",
+      "srcPath": "./features/assets",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "profile",
+      "srcPath": "./features/profile",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

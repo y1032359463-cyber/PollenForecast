@@ -1,0 +1,48 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#1C1C1E"
+    },
+    {
+      "name": "status_bar_bg",
+      "value": "#2C2C2E"
+    },
+    {
+      "name": "status_bar_content",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "bg_main",
+      "value": "#2C2C2E"
+    },
+    {
+      "name": "bg_card",
+      "value": "#3A3A3C"
+    },
+    {
+      "name": "btn_normal",
+      "value": "#48484A"
+    },
+    {
+      "name": "btn_operator",
+      "value": "#5A5A5C"
+    },
+    {
+      "name": "text_primary",
+      "value": "#FFB366"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#C4C4C4"
+    },
+    {
+      "name": "border_color",
+      "value": "#4A4A4C"
+    },
+    {
+      "name": "btn_border_color",
+      "value": "#FF8C42"
+    }
+  ]
+}

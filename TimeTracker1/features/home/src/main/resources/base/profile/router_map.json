@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "BillDetailPage",
+      "pageSourceFile": "src/main/ets/views/BillDetailPage.ets",
+      "buildFunction": "billDetailPageBuilder",
+      "data": {
+        "description": ""
+      }
+    }
+  ]
+}

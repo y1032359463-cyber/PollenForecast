@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/profile",
+  "version": "1.0.0",
+  "description": "Profile and settings module for TimeTracker",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ohos/commonlib": "file:../../commons/commonlib"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "routerMap": [
+    {
+      "name": "AssetDetailPage",
+      "pageSourceFile": "src/main/ets/views/AssetDetailPage.ets",
+      "buildFunction": "assetDetailPageBuilder",
+      "data": {
+        "description": ""
+      }
+    }
+  ]
+}

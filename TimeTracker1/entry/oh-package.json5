@@ -1,0 +1,17 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/commonlib": "file:../commons/commonlib",
+    "@ohos/navigation": "file:../components/navigation",
+    "@ohos/time_calendar": "file:../components/time_calendar",
+    "@ohos/time_card": "file:../components/time_card",
+    "@ohos/time_record": "file:../features/time_record",
+    "@ohos/profile": "file:../features/profile"
+  }
+}
+

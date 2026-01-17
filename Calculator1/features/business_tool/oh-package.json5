@@ -1,0 +1,14 @@
+{
+  "name": "business_tool",
+  "version": "1.0.0",
+  "description": "工具模块 - 包含日期计算、BMI计算、汇率计算等工具",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "lib_foundation": "file:../../commons/lib_foundation",
+    "module_date_calculation": "file:../../components/module_date_calculation",
+    "bmi_calculator": "file:../../libs/bmi/bmi_calculator",
+    "exchange_calculator": "file:../../libs/exchange/exchange_calculator"
+  }
+}

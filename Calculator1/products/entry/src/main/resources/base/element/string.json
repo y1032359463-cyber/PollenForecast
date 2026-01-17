@@ -1,0 +1,40 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "计算器"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "form_description"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "form_label"
+    },
+    {
+      "name": "widget_desc",
+      "value": "这是一个计算器模板卡片"
+    },
+    {
+      "name": "widget_display_name",
+      "value": "计算器模板卡片"
+    },
+    {
+      "name": "agcit_huawei_calculator",
+      "value": "1.0.2"
+    },
+    {
+      "name": "vibrate_reason",
+      "value": "用于按键振动反馈，提升操作手感"
+    }
+  ]
+}

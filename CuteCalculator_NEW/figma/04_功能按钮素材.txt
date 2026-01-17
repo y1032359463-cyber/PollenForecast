@@ -1,0 +1,91 @@
+Design function button assets (=, C, DEL, %, .) for a cute calculator app with these specifications:
+
+## Standard Button Dimensions (for %, ., DEL)
+- Size: 200×200px (@3x scale, 600×600px actual)
+- Export as: PNG with transparent background
+- Border radius: 48px (at @3x scale)
+
+## Equal Button Dimensions (TALL)
+- Size: 200×416px (@3x scale, 600×1248px actual) - DOUBLE HEIGHT
+- Border radius: 48px (at @3x scale)
+- Transparent background
+
+## Button Specifications
+
+### 1. Equal Button (=)
+- Background color: #FF8C42 (primary orange)
+- Symbol: "=" in white (#FFFFFF)
+- Font: SF Pro Rounded Bold, 80px
+- Position: centered in tall button
+- Shadow: 0px 4px 16px rgba(255, 140, 66, 0.3)
+- Gradient: #FFA15C (top) to #FF8C42 (bottom)
+
+### 2. Clear Button (C)
+- Background color: #FF6B6B (red)
+- Text: "C" in white (#FFFFFF)
+- Font: SF Pro Rounded Bold, 80px
+- Position: centered
+- Shadow: 0px 4px 12px rgba(255, 107, 107, 0.25)
+- Gradient: #FF8080 (top) to #FF6B6B (bottom)
+
+### 3. Delete Button (DEL)
+- Background color: #D1D1D6 (light gray)
+- Text: "DEL" in #C17735 (brown)
+- Font: SF Pro Rounded Bold, 48px (smaller text)
+- Position: centered
+- Shadow: 0px 4px 12px rgba(209, 209, 214, 0.3)
+- Gradient: #E0E0E5 (top) to #D1D1D6 (bottom)
+
+### 4. Percent Button (%)
+- Background color: #FFB366 (warm orange, same as operators)
+- Symbol: "%" in white (#FFFFFF)
+- Font: SF Pro Rounded Bold, 80px
+- Position: centered
+- Shadow: 0px 4px 12px rgba(255, 140, 66, 0.2)
+- Gradient: #FFC480 (top) to #FFB366 (bottom)
+
+### 5. Dot Button (.)
+- Background color: #FFF5E6 (cream, same as numbers)
+- Symbol: "•" (bullet point, larger dot)
+- Font size: 100px (larger for visibility)
+- Color: #C17735 (brown)
+- Position: centered
+- Shadow: 0px 4px 12px rgba(193, 119, 53, 0.15)
+- Gradient: #FFFBF5 (top) to #FFF5E6 (bottom)
+
+## Design Style
+- Consistent rounded corners across all buttons
+- Subtle gradient for depth (lighter top, darker bottom)
+- Soft shadows for elevation
+- Clean, modern appearance
+- Clear visual hierarchy
+
+## Export Requirements
+- Format: PNG
+- Resolution: @3x
+  * Standard buttons: 600×600px
+  * Equal button: 600×1248px (double height)
+- Naming convention:
+  * btn_equal.png (tall)
+  * btn_clear.png
+  * btn_delete.png
+  * btn_percent.png
+  * btn_dot.png
+- Background: transparent
+- Color profile: sRGB
+
+## Visual Priorities
+1. Equal button (=): most prominent (tall, bright orange)
+2. Clear button (C): attention-grabbing (red)
+3. Operator buttons (%, others): supporting actions
+4. Delete/Dot: utility functions
+
+## Quality Standards
+- Sharp rendering
+- Exact color matching
+- Perfect center alignment
+- Consistent shadow style
+- Professional finish
+- Clear legibility of all symbols and text
+
+Create all 5 function buttons as separate components with these exact specifications.
